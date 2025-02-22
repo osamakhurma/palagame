@@ -51,6 +51,24 @@
             font-weight: bold;
             margin-top: 10px;
         }
+        #info-box {
+            display: none;
+            position: absolute;
+            background: white;
+            padding: 10px;
+            border: 1px solid black;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        #next-question {
+            margin-top: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -59,23 +77,33 @@
     
     <div class="map-container">
         <img src="/static/new.png" class="map" alt="خريطة فلسطين">
+        <div id="info-box">
+            <p id="city-info"></p>
+            <button id="next-question">السؤال التالي</button>
+        </div>
     </div>
 
     <script>
         const locations = {
-            "الخليل": [347, 346], "بيت لحم": [396, 299], "القدس": [399, 279], "أريحا": [430, 239],
-            "رام الله": [380, 236], "نابلس": [390, 190], "بئر السبع": [280, 416], "رفح": [205, 401],
-            "غزة": [206, 363], "يافا": [309, 211], "الرملة": [326, 249], "طبريا": [444, 115],
-            "بيسان": [443, 162], "حيفا": [336, 103], "عكا": [360, 77], "صفد": [441, 64],
-            "جنين": [390, 160], "الناصرة": [404, 127]
+            "الخليل": [347, 346, "تشتهر بصناعة الزجاج والخزف"], "بيت لحم": [396, 299, "تشتهر بكنيسة المهد"],
+            "القدس": [399, 279, "مشهورة بالمعالم التاريخية والدينية"], "أريحا": [430, 239, "من أقدم مدن العالم"],
+            "رام الله": [380, 236, "مركز ثقافي مهم"], "نابلس": [390, 190, "مشهورة بالكنافة النابلسية"],
+            "بئر السبع": [280, 416, "أكبر مدن النقب"], "رفح": [205, 401, "مدينة حدودية مع مصر"],
+            "غزة": [206, 363, "معروفة بمينائها وتاريخها العريق"], "يافا": [309, 211, "تشتهر بالبرتقال اليافاوي"],
+            "الرملة": [326, 249, "مدينة تاريخية قديمة"], "طبريا": [444, 115, "تقع على بحيرة طبريا"],
+            "بيسان": [443, 162, "مدينة أثرية"], "حيفا": [336, 103, "مشهورة بمينائها"],
+            "عكا": [360, 77, "معروفة بالأسوار التاريخية"], "صفد": [441, 64, "مدينة جبلية تاريخية"],
+            "جنين": [390, 160, "تشتهر بمخيم جنين"], "الناصرة": [404, 127, "مشهورة بكنيسة البشارة"]
         };
         
-        const governorates = ["الخليل", "رام الله", "نابلس", "بئر السبع", "غزة", "حيفا", "جنين"];
         let currentCity = "";
         let score = 0;
         const questionElement = document.getElementById("question");
         const scoreElement = document.getElementById("score");
         const mapContainer = document.querySelector(".map-container");
+        const infoBox = document.getElementById("info-box");
+        const cityInfo = document.getElementById("city-info");
+        const nextQuestionButton = document.getElementById("next-question");
 
         function getRandomCity() {
             const keys = Object.keys(locations);
@@ -84,22 +112,15 @@
 
         function setupGame() {
             document.querySelectorAll(".point").forEach(e => e.remove());
+            infoBox.style.display = "none";
             
             for (let city in locations) {
                 let point = document.createElement("div");
-                point.classList.add("point");
-                
-                if (governorates.includes(city)) {
-                    point.classList.add("governorate");
-                } else {
-                    point.classList.add("city");
-                }
-                
+                point.classList.add("point", "city");
                 point.style.left = `${locations[city][0]}px`;
                 point.style.top = `${locations[city][1]}px`;
                 
                 point.onclick = () => checkAnswer(city, point);
-                
                 mapContainer.appendChild(point);
             }
             
@@ -108,21 +129,19 @@
         }
         
         function checkAnswer(selectedCity, pointElement) {
-            let audio = new Audio(selectedCity === currentCity ? "/static/correct.mp3" : "/static/wrong.mp3");
-            audio.play();
-            
             if (selectedCity === currentCity) {
                 pointElement.classList.add("correct");
                 score += 10;
+                cityInfo.innerText = locations[selectedCity][2];
+                infoBox.style.display = "block";
             } else {
                 pointElement.classList.add("wrong");
                 score -= 5;
             }
-            
             scoreElement.innerText = "Score: " + score;
-            setTimeout(setupGame, 1000);
         }
         
+        nextQuestionButton.onclick = setupGame;
         setupGame();
     </script>
 </body>
