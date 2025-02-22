@@ -45,10 +45,17 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
+        #score {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>اضغط على موقع <span id="question"></span></h1>
+    <p id="score">السكور: 0</p> <!-- مكان عرض السكور -->
+    
     <div class="map-container">
         <img src="/static/new.png" class="map" alt="خريطة فلسطين">
         
@@ -63,7 +70,9 @@
             
             const governorates = ["الخليل", "رام الله", "نابلس", "بئر السبع", "غزة", "حيفا", "جنين"];
             let currentCity = "";
+            let score = 0;  // متغير لحفظ السكور
             const questionElement = document.getElementById("question");
+            const scoreElement = document.getElementById("score");
 
             function getRandomCity() {
                 const keys = Object.keys(cities);
@@ -101,9 +110,13 @@
                 
                 if (selectedCity === currentCity) {
                     pointElement.classList.add("correct");
+                    score += 10;  // زيادة السكور
                 } else {
                     pointElement.classList.add("wrong");
+                    score -= 5;  // تقليل السكور
                 }
+                
+                scoreElement.innerText = "السكور: " + score;  // تحديث السكور في الصفحة
                 
                 setTimeout(setupGame, 1000);
             }
