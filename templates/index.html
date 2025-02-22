@@ -10,7 +10,9 @@
             font-family: Arial, sans-serif;
             background-color: #d4edda;
         }
-        h1 { color: #333; }
+        h1 {
+            color: #333;
+        }
         .map-container {
             position: relative;
             display: inline-block;
@@ -27,6 +29,7 @@
             border-radius: 50%;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.3s;
+            z-index: 10;
         }
         .city { background-color: blue; }
         .governorate { background-color: black; }
@@ -37,37 +40,16 @@
         .wrong { background-color: red !important; animation: shake 0.5s; }
         
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25%, 75% { transform: translateX(-5px); }
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
             50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
         }
         #score {
             font-size: 20px;
             font-weight: bold;
             margin-top: 10px;
-        }
-        /* ستايل النافذة المنبثقة */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
         }
     </style>
 </head>
@@ -78,47 +60,47 @@
     <div class="map-container">
         <img src="/static/new.png" class="map" alt="خريطة فلسطين">
     </div>
-    
-    <!-- نافذة المعلومات -->
-    <div class="modal-overlay" id="overlay"></div>
-    <div class="modal" id="infoModal">
-        <h2>معلومات عن المدينة</h2>
-        <p id="cityInfo"></p>
-        <button onclick="closeModal()">إغلاق</button>
-    </div>
-    
+
     <script>
-        const cities = {
-            "القدس": {coords: [399, 279], info: "القدس مشهورة بمعالمها الدينية والثقافية."},
-            "الخليل": {coords: [347, 346], info: "الخليل مشهورة بالحرم الإبراهيمي وصناعة الزجاج."},
-            "غزة": {coords: [206, 363], info: "غزة تشتهر بالأسواق الشعبية والصيد البحري."},
-            "نابلس": {coords: [390, 190], info: "نابلس تشتهر بالكنافة النابلسية وصابون الزيتون."},
-            "يافا": {coords: [309, 211], info: "يافا مشهورة بالبرتقال ومينائها التاريخي."},
+        const locations = {
+            "الخليل": [347, 346], "بيت لحم": [396, 299], "القدس": [399, 279], "أريحا": [430, 239],
+            "رام الله": [380, 236], "نابلس": [390, 190], "بئر السبع": [280, 416], "رفح": [205, 401],
+            "غزة": [206, 363], "يافا": [309, 211], "الرملة": [326, 249], "طبريا": [444, 115],
+            "بيسان": [443, 162], "حيفا": [336, 103], "عكا": [360, 77], "صفد": [441, 64],
+            "جنين": [390, 160], "الناصرة": [404, 127]
         };
         
+        const governorates = ["الخليل", "رام الله", "نابلس", "بئر السبع", "غزة", "حيفا", "جنين"];
         let currentCity = "";
         let score = 0;
         const questionElement = document.getElementById("question");
         const scoreElement = document.getElementById("score");
-        const modal = document.getElementById("infoModal");
-        const overlay = document.getElementById("overlay");
-        const cityInfoElement = document.getElementById("cityInfo");
-        
+        const mapContainer = document.querySelector(".map-container");
+
         function getRandomCity() {
-            const keys = Object.keys(cities);
+            const keys = Object.keys(locations);
             return keys[Math.floor(Math.random() * keys.length)];
         }
-        
+
         function setupGame() {
             document.querySelectorAll(".point").forEach(e => e.remove());
             
-            for (let city in cities) {
+            for (let city in locations) {
                 let point = document.createElement("div");
-                point.classList.add("point", "city");
-                point.style.left = `${cities[city].coords[0]}px`;
-                point.style.top = `${cities[city].coords[1]}px`;
+                point.classList.add("point");
+                
+                if (governorates.includes(city)) {
+                    point.classList.add("governorate");
+                } else {
+                    point.classList.add("city");
+                }
+                
+                point.style.left = `${locations[city][0]}px`;
+                point.style.top = `${locations[city][1]}px`;
+                
                 point.onclick = () => checkAnswer(city, point);
-                document.querySelector(".map-container").appendChild(point);
+                
+                mapContainer.appendChild(point);
             }
             
             currentCity = getRandomCity();
@@ -126,37 +108,19 @@
         }
         
         function checkAnswer(selectedCity, pointElement) {
+            let audio = new Audio(selectedCity === currentCity ? "/static/correct.mp3" : "/static/wrong.mp3");
+            audio.play();
+            
             if (selectedCity === currentCity) {
                 pointElement.classList.add("correct");
                 score += 10;
-                showOptions(selectedCity);
             } else {
                 pointElement.classList.add("wrong");
                 score -= 5;
-                setTimeout(setupGame, 1000);
             }
+            
             scoreElement.innerText = "Score: " + score;
-        }
-        
-        function showOptions(city) {
-            let options = confirm("إجابة صحيحة! ماذا تريد أن تفعل؟\n1. معلومات عن المدينة\n2. السؤال التالي");
-            if (options) {
-                showCityInfo(city);
-            } else {
-                setupGame();
-            }
-        }
-        
-        function showCityInfo(city) {
-            cityInfoElement.innerText = cities[city].info;
-            modal.style.display = "block";
-            overlay.style.display = "block";
-        }
-        
-        function closeModal() {
-            modal.style.display = "none";
-            overlay.style.display = "none";
-            setupGame();
+            setTimeout(setupGame, 1000);
         }
         
         setupGame();
