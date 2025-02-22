@@ -54,7 +54,7 @@
 </head>
 <body>
     <h1>اضغط على موقع <span id="question"></span></h1>
-    <p id="score">السكور: 0</p> <!-- مكان عرض السكور -->
+    <p id="score">Score: 0</p> <!-- تعديل كلمة سكور إلى Score -->
     
     <div class="map-container">
         <img src="/static/new.png" class="map" alt="خريطة فلسطين">
@@ -116,7 +116,7 @@
                     score -= 5;  // تقليل السكور
                 }
                 
-                scoreElement.innerText = "السكور: " + score;  // تحديث السكور في الصفحة
+                scoreElement.innerText = "Score: " + score;  // تحديث السكور في الصفحة
                 
                 setTimeout(setupGame, 1000);
             }
