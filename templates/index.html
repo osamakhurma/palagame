@@ -10,9 +10,6 @@
             font-family: Arial, sans-serif;
             background-color: #d4edda;
         }
-        h1 {
-            color: #333;
-        }
         .map-container {
             position: relative;
             display: inline-block;
@@ -22,127 +19,112 @@
             height: 700px;
             border: 2px solid #000;
         }
-        .point {
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.3s;
-            z-index: 10;
-        }
-        .city { background-color: blue; }
-        .governorate { background-color: black; }
-        .correct { 
-            background-color: green !important; 
-            box-shadow: 0 0 15px green !important; 
-        }
-        .wrong { background-color: red !important; animation: shake 0.5s; }
-        
-        @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
-        }
-        #score {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #info-box {
+        .popup {
             display: none;
-            position: absolute;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: white;
-            padding: 10px;
-            border: 1px solid black;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
-            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
         }
-        #next-question {
-            margin-top: 10px;
-            padding: 5px 10px;
-            cursor: pointer;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            font-size: 16px;
-        }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <h1>اضغط على موقع <span id="question"></span></h1>
-    <p id="score">Score: 0</p>
-    
-    <div class="map-container">
+
+    <h1>لعبة خريطة فلسطين</h1>
+    <button id="startBtn">ابدأ</button>
+    <h2 id="timer" class="hidden">الوقت المتبقي: 60 ثانية</h2>
+    <h2 id="score" class="hidden">النتيجة: 0 / 10</h2>
+    <h3 id="question" class="hidden"></h3>
+
+    <div class="map-container hidden">
         <img src="/static/new.png" class="map" alt="خريطة فلسطين">
-        <div id="info-box">
-            <p id="city-info"></p>
-            <button id="next-question">السؤال التالي</button>
-        </div>
+    </div>
+
+    <div class="popup" id="popup">
+        <p id="popup-text"></p>
+        <button id="continueBtn">كمل للسؤال اللي بعده</button>
+        <button id="infoBtn">خذ معلومات</button>
     </div>
 
     <script>
-        const locations = {
-            "الخليل": [347, 346, "تشتهر بصناعة الزجاج والخزف"], "بيت لحم": [396, 299, "تشتهر بكنيسة المهد"],
-            "القدس": [399, 279, "مشهورة بالمعالم التاريخية والدينية"], "أريحا": [430, 239, "من أقدم مدن العالم"],
-            "رام الله": [380, 236, "مركز ثقافي مهم"], "نابلس": [390, 190, "مشهورة بالكنافة النابلسية"],
-            "بئر السبع": [280, 416, "أكبر مدن النقب"], "رفح": [205, 401, "مدينة حدودية مع مصر"],
-            "غزة": [206, 363, "معروفة بمينائها وتاريخها العريق"], "يافا": [309, 211, "تشتهر بالبرتقال اليافاوي"],
-            "الرملة": [326, 249, "مدينة تاريخية قديمة"], "طبريا": [444, 115, "تقع على بحيرة طبريا"],
-            "بيسان": [443, 162, "مدينة أثرية"], "حيفا": [336, 103, "مشهورة بمينائها"],
-            "عكا": [360, 77, "معروفة بالأسوار التاريخية"], "صفد": [441, 64, "مدينة جبلية تاريخية"],
-            "جنين": [390, 160, "تشتهر بمخيم جنين"], "الناصرة": [404, 127, "مشهورة بكنيسة البشارة"]
-        };
-        
+        let cities = [];
         let currentCity = "";
         let score = 0;
-        const questionElement = document.getElementById("question");
-        const scoreElement = document.getElementById("score");
-        const mapContainer = document.querySelector(".map-container");
-        const infoBox = document.getElementById("info-box");
-        const cityInfo = document.getElementById("city-info");
-        const nextQuestionButton = document.getElementById("next-question");
+        let timer = 60;
+        let timerInterval;
 
-        function getRandomCity() {
-            const keys = Object.keys(locations);
-            return keys[Math.floor(Math.random() * keys.length)];
+        document.getElementById("startBtn").addEventListener("click", startGame);
+        document.getElementById("continueBtn").addEventListener("click", nextQuestion);
+        document.getElementById("infoBtn").addEventListener("click", showInfo);
+
+        function startGame() {
+            document.getElementById("startBtn").classList.add("hidden");
+            document.getElementById("timer").classList.remove("hidden");
+            document.getElementById("score").classList.remove("hidden");
+            document.getElementById("question").classList.remove("hidden");
+            document.querySelector(".map-container").classList.remove("hidden");
+
+            fetch("/start_game")
+                .then(response => response.json())
+                .then(data => {
+                    cities = data.cities;
+                    nextQuestion();
+                });
+
+            timerInterval = setInterval(() => {
+                timer--;
+                document.getElementById("timer").innerText = `الوقت المتبقي: ${timer} ثانية`;
+                if (timer <= 0) endGame();
+            }, 1000);
         }
 
-        function setupGame() {
-            document.querySelectorAll(".point").forEach(e => e.remove());
-            infoBox.style.display = "none";
-            
-            for (let city in locations) {
-                let point = document.createElement("div");
-                point.classList.add("point", "city");
-                point.style.left = `${locations[city][0]}px`;
-                point.style.top = `${locations[city][1]}px`;
-                
-                point.onclick = () => checkAnswer(city, point);
-                mapContainer.appendChild(point);
+        function nextQuestion() {
+            if (score >= 10 || timer <= 0) {
+                endGame();
+                return;
             }
-            
-            currentCity = getRandomCity();
-            questionElement.innerText = currentCity;
+
+            currentCity = cities[score];
+            document.getElementById("question").innerText = `حدد موقع: ${currentCity}`;
+            document.getElementById("popup").style.display = "none";
         }
-        
-        function checkAnswer(selectedCity, pointElement) {
-            if (selectedCity === currentCity) {
-                pointElement.classList.add("correct");
-                score += 10;
-                cityInfo.innerText = locations[selectedCity][2];
-                infoBox.style.display = "block";
-            } else {
-                pointElement.classList.add("wrong");
-                score -= 5;
-            }
-            scoreElement.innerText = "Score: " + score;
+
+        function checkAnswer(selectedCity) {
+            fetch("/check_answer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ city: selectedCity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "correct") {
+                    score++;
+                    document.getElementById("score").innerText = `النتيجة: ${score} / 10`;
+                    document.getElementById("popup-text").innerText = `إجابة صحيحة!`;
+                    document.getElementById("infoBtn").setAttribute("data-info", data.info);
+                } else {
+                    document.getElementById("popup-text").innerText = `إجابة خاطئة!`;
+                    document.getElementById("infoBtn").classList.add("hidden");
+                }
+                document.getElementById("popup").style.display = "block";
+            });
         }
-        
-        nextQuestionButton.onclick = setupGame;
-        setupGame();
+
+        function showInfo() {
+            alert(document.getElementById("infoBtn").getAttribute("data-info"));
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            alert(`انتهت اللعبة! حصلت على ${score} / 10`);
+            location.reload();
+        }
     </script>
+
 </body>
 </html>
