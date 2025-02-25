@@ -20,16 +20,12 @@
         }
         .city-dot {
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             background-color: red;
             border-radius: 50%;
             cursor: pointer;
             transform: translate(-50%, -50%);
-            transition: background-color 0.3s;
-        }
-        .correct {
-            background-color: green !important;
         }
     </style>
 </head>
@@ -40,26 +36,12 @@
     
     <div class="map-container">
         <img src="{{ url_for('static', filename='new.png') }}" class="map" alt="خريطة فلسطين">
-        {% for city, data in {
-            "الخليل": (360, 322),
-            "بيت لحم": (411, 279),
-            "القدس": (415, 260),
-            "أريحا": (447, 223),
-            "رام الله": (395, 220),
-            "نابلس": (405, 177),
-            "بئر السبع": (291, 388),
-            "رفح": (213, 374),
-            "غزة": (214, 338),
-            "يافا": (321, 196),
-            "الرملة": (339, 232),
-            "طبريا": (461, 107),
-            "بيسان": (460, 151),
-            "حيفا": (349, 96),
-            "عكا": (374, 71),
-            timeLeft--;
-        }
-        setInterval(updateTimer, 1000);
-        
+        {% for city, data in locations.items() %}
+            <div class="city-dot" data-city="{{ city }}" style="left: {{ data[0] }}px; top: {{ data[1] }}px;"></div>
+        {% endfor %}
+    </div>
+
+    <script>
         document.querySelectorAll('.city-dot').forEach(dot => {
             dot.addEventListener('click', function() {
                 let city = this.getAttribute('data-city');
@@ -71,9 +53,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "correct") {
-                        this.classList.add("correct");
-                        score++;
-                        document.getElementById("score").textContent = score + " / " + totalQuestions;
+                        alert(`إجابة صحيحة! ${city}: ${data.info}`);
                     } else {
                         alert("إجابة خاطئة!");
                     }
