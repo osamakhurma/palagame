@@ -1,32 +1,53 @@
-from flask import Flask, render_template, request, jsonify
-import random
-
-app = Flask(__name__)
-
-locations = {
-    "الخليل": (346, 347, "governorate", "تشتهر بصناعة الزجاج والخزف"),
-    "بيت لحم": (299, 396, "city", "تشتهر بكنيسة المهد"),
-    "القدس": (279, 399, "city", "مشهورة بالمعالم التاريخية والدينية"),
-    "أريحا": (239, 430, "city", "من أقدم مدن العالم"),
-    "رام الله": (236, 380, "governorate", "مركز ثقافي مهم"),
-    "نابلس": (190, 390, "governorate", "مشهورة بالكنافة النابلسية"),
-    "بئر السبع": (416, 280, "governorate", "أكبر مدن النقب"),
-    "رفح": (401, 205, "city", "مدينة حدودية مع مصر"),
-    "غزة": (363, 206, "city", "معروفة بمينائها وتاريخها العريق"),
-    "يافا": (211, 309, "city", "تشتهر بالبرتقال اليافاوي"),
-    "الرملة": (249, 326, "city", "مدينة تاريخية قديمة"),
-    "طبريا": (115, 444, "city", "تقع على بحيرة طبريا"),
-    "بيسان": (162, 443, "city", "مدينة أثرية"),
-    "حيفا": (103, 336, "city", "مشهورة بمينائها"),
-    "عكا": (77, 360, "city", "معروفة بالأسوار التاريخية"),
-    "صفد": (64, 441, "city", "مدينة جبلية تاريخية"),
-    "جنين": (160, 390, "city", "تشتهر بمخيم جنين"),
-    "الناصرة": (127, 404, "city", "مشهورة بكنيسة البشارة"),
-}
-
-@app.route('/')
-def index():
-    return render_template('index.html', locations=locations)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة خريطة فلسطين</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #eaf2d7;
+        }
+        .map-container {
+            position: relative;
+            display: inline-block;
+        }
+        .map {
+            width: 700px;
+            height: 700px;
+        }
+        .dot {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>لعبة خريطة فلسطين</h1>
+    <p>الوقت المتبقي: <span id="timer">60</span> ثانية</p>
+    <p>النتيجة: <span id="score">0</span> / 10</p>
+    
+    <div class="map-container">
+        <img src="/static/map.png" class="map" alt="خريطة فلسطين">
+        {% for name, (y, x, category, desc) in locations.items() %}
+            <div class="dot" style="top: {{ y }}px; left: {{ x }}px;" title="{{ name }}: {{ desc }}"></div>
+        {% endfor %}
+    </div>
+    
+    <script>
+        let timeLeft = 60;
+        const timerElement = document.getElementById("timer");
+        setInterval(() => {
+            if (timeLeft > 0) {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
