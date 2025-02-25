@@ -1,10 +1,9 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify
 import random
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # مفتاح التشفير للجلسة
 
-# قائمة المدن والمحافظات مع الإحداثيات والمعلومات
+# المدن مع إحداثياتها والمعلومات عنها
 locations = {
     "الخليل": (347, 346, "governorate", "تشتهر بصناعة الزجاج والخزف"),
     "بيت لحم": (396, 299, "city", "تشتهر بكنيسة المهد"),
@@ -23,36 +22,46 @@ locations = {
     "عكا": (360, 77, "city", "معروفة بالأسوار التاريخية"),
     "صفد": (441, 64, "city", "مدينة جبلية تاريخية"),
     "جنين": (390, 160, "city", "تشتهر بمخيم جنين"),
-    "الناصرة": (404, 127, "city", "مشهورة بكنيسة البشارة"),
+    "الناصرة": (404, 127, "city", "مشهورة بكنيسة البشارة")
 }
 
+# قائمة المدن المختارة حتى الآن
+chosen_cities = []
+score = 0
+
 def get_random_city():
-    return random.choice(list(locations.keys()))
+    remaining_cities = list(set(locations.keys()) - set(chosen_cities))
+    return random.choice(remaining_cities) if remaining_cities else None
 
 @app.route('/')
 def index():
-    session['score'] = 0  # إعادة تعيين السكور عند بدء اللعبة
+    return render_template('index.html')
+
+@app.route('/start', methods=['GET'])
+def start_game():
+    global chosen_cities, score
+    chosen_cities = []
+    score = 0
     city = get_random_city()
-    return render_template('index.html', city=city, locations=locations, score=session['score'])
+    return jsonify({"city": city})
 
 @app.route('/check', methods=['POST'])
 def check():
+    global score
     data = request.json
     city = data['city']
-    correct = city in locations
     
-    if correct:
-        session['score'] += 1  # زيادة السكور
-        info = locations[city][3]  # جلب المعلومات عن المدينة
+    if city in locations and city not in chosen_cities:
+        chosen_cities.append(city)
+        score += 1
+        x, y, _, info = locations[city]
+        
+        if len(chosen_cities) == 10:
+            return jsonify({"result": "انتهت اللعبة!", "score": score})
+        
+        return jsonify({"result": "صح ✅", "info": info, "new_city": get_random_city(), "score": score})
     else:
-        info = "إجابة خاطئة! حاول مرة أخرى."
-    
-    return jsonify({
-        "result": "صح ✅" if correct else "خطأ ❌",
-        "new_city": get_random_city() if correct else city,
-        "score": session['score'],
-        "info": info
-    })
+        return jsonify({"result": "خطأ ❌", "score": score})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
