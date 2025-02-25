@@ -6,125 +6,60 @@
     <title>لعبة خريطة فلسطين</title>
     <style>
         body {
+            background-color: #dff0d8;
             text-align: center;
             font-family: Arial, sans-serif;
-            background-color: #d4edda;
         }
         .map-container {
             position: relative;
             display: inline-block;
         }
         .map {
-            width: 700px;
-            height: 700px;
-            border: 2px solid #000;
+            width: 500px;
+            height: auto;
         }
-        .popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
+        .city-dot {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            cursor: pointer;
             transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
         }
-        .hidden { display: none; }
     </style>
 </head>
 <body>
-
     <h1>لعبة خريطة فلسطين</h1>
-    <button id="startBtn">ابدأ</button>
-    <h2 id="timer" class="hidden">الوقت المتبقي: 60 ثانية</h2>
-    <h2 id="score" class="hidden">النتيجة: 0 / 10</h2>
-    <h3 id="question" class="hidden"></h3>
-
-    <div class="map-container hidden">
-        <img src="/static/new.png" class="map" alt="خريطة فلسطين">
-    </div>
-
-    <div class="popup" id="popup">
-        <p id="popup-text"></p>
-        <button id="continueBtn">كمل للسؤال اللي بعده</button>
-        <button id="infoBtn">خذ معلومات</button>
+    <div>الوقت المتبقي: <span id="timer">60</span> ثانية</div>
+    <div>النتيجة: <span id="score">0</span> / 10</div>
+    
+    <div class="map-container">
+        <img src="{{ url_for('static', filename='new.png') }}" class="map" alt="خريطة فلسطين">
+        {% for city, data in locations.items() %}
+            <div class="city-dot" data-city="{{ city }}" style="left: {{ data[0] }}px; top: {{ data[1] }}px;"></div>
+        {% endfor %}
     </div>
 
     <script>
-        let cities = [];
-        let currentCity = "";
-        let score = 0;
-        let timer = 60;
-        let timerInterval;
-
-        document.getElementById("startBtn").addEventListener("click", startGame);
-        document.getElementById("continueBtn").addEventListener("click", nextQuestion);
-        document.getElementById("infoBtn").addEventListener("click", showInfo);
-
-        function startGame() {
-            document.getElementById("startBtn").classList.add("hidden");
-            document.getElementById("timer").classList.remove("hidden");
-            document.getElementById("score").classList.remove("hidden");
-            document.getElementById("question").classList.remove("hidden");
-            document.querySelector(".map-container").classList.remove("hidden");
-
-            fetch("/start_game")
+        document.querySelectorAll('.city-dot').forEach(dot => {
+            dot.addEventListener('click', function() {
+                let city = this.getAttribute('data-city');
+                fetch('/check_answer', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ city: city })
+                })
                 .then(response => response.json())
                 .then(data => {
-                    cities = data.cities;
-                    nextQuestion();
+                    if (data.status === "correct") {
+                        alert(`إجابة صحيحة! ${city}: ${data.info}`);
+                    } else {
+                        alert("إجابة خاطئة!");
+                    }
                 });
-
-            timerInterval = setInterval(() => {
-                timer--;
-                document.getElementById("timer").innerText = `الوقت المتبقي: ${timer} ثانية`;
-                if (timer <= 0) endGame();
-            }, 1000);
-        }
-
-        function nextQuestion() {
-            if (score >= 10 || timer <= 0) {
-                endGame();
-                return;
-            }
-
-            currentCity = cities[score];
-            document.getElementById("question").innerText = `حدد موقع: ${currentCity}`;
-            document.getElementById("popup").style.display = "none";
-        }
-
-        function checkAnswer(selectedCity) {
-            fetch("/check_answer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ city: selectedCity })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "correct") {
-                    score++;
-                    document.getElementById("score").innerText = `النتيجة: ${score} / 10`;
-                    document.getElementById("popup-text").innerText = `إجابة صحيحة!`;
-                    document.getElementById("infoBtn").setAttribute("data-info", data.info);
-                } else {
-                    document.getElementById("popup-text").innerText = `إجابة خاطئة!`;
-                    document.getElementById("infoBtn").classList.add("hidden");
-                }
-                document.getElementById("popup").style.display = "block";
             });
-        }
-
-        function showInfo() {
-            alert(document.getElementById("infoBtn").getAttribute("data-info"));
-        }
-
-        function endGame() {
-            clearInterval(timerInterval);
-            alert(`انتهت اللعبة! حصلت على ${score} / 10`);
-            location.reload();
-        }
+        });
     </script>
-
 </body>
 </html>
