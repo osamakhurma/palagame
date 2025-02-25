@@ -3,7 +3,6 @@ import random
 
 app = Flask(__name__)
 
-# المدن مع إحداثياتها والمعلومات عنها
 locations = {
     "الخليل": (347, 346, "governorate", "تشتهر بصناعة الزجاج والخزف"),
     "بيت لحم": (396, 299, "city", "تشتهر بكنيسة المهد"),
@@ -25,43 +24,27 @@ locations = {
     "الناصرة": (404, 127, "city", "مشهورة بكنيسة البشارة")
 }
 
-# قائمة المدن المختارة حتى الآن
-chosen_cities = []
-score = 0
-
-def get_random_city():
-    remaining_cities = list(set(locations.keys()) - set(chosen_cities))
-    return random.choice(remaining_cities) if remaining_cities else None
+def get_random_cities(count=10):
+    return random.sample(list(locations.keys()), count)
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/start', methods=['GET'])
+@app.route('/start_game', methods=['GET'])
 def start_game():
-    global chosen_cities, score
-    chosen_cities = []
-    score = 0
-    city = get_random_city()
-    return jsonify({"city": city})
+    cities = get_random_cities()
+    return jsonify({"cities": cities})
 
-@app.route('/check', methods=['POST'])
-def check():
-    global score
+@app.route('/check_answer', methods=['POST'])
+def check_answer():
     data = request.json
     city = data['city']
-    
-    if city in locations and city not in chosen_cities:
-        chosen_cities.append(city)
-        score += 1
-        x, y, _, info = locations[city]
-        
-        if len(chosen_cities) == 10:
-            return jsonify({"result": "انتهت اللعبة!", "score": score})
-        
-        return jsonify({"result": "صح ✅", "info": info, "new_city": get_random_city(), "score": score})
+    if city in locations:
+        info = locations[city][3]
+        return jsonify({"status": "correct", "info": info})
     else:
-        return jsonify({"result": "خطأ ❌", "score": score})
+        return jsonify({"status": "wrong"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
