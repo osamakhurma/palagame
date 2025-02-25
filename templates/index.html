@@ -15,17 +15,21 @@
             display: inline-block;
         }
         .map {
-            width: 500px;
-            height: auto;
+            width: 467px;
+            height: 506px;
         }
         .city-dot {
             position: absolute;
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             background-color: red;
             border-radius: 50%;
             cursor: pointer;
             transform: translate(-50%, -50%);
+            transition: background-color 0.3s;
+        }
+        .correct {
+            background-color: green !important;
         }
     </style>
 </head>
@@ -42,6 +46,20 @@
     </div>
 
     <script>
+        let timeLeft = 60;
+        let score = 0;
+        let totalQuestions = 10;
+        
+        function updateTimer() {
+            document.getElementById("timer").textContent = timeLeft;
+            if (timeLeft === 0) {
+                alert("انتهى الوقت! حصلت على " + score + " / " + totalQuestions);
+                location.reload();
+            }
+            timeLeft--;
+        }
+        setInterval(updateTimer, 1000);
+        
         document.querySelectorAll('.city-dot').forEach(dot => {
             dot.addEventListener('click', function() {
                 let city = this.getAttribute('data-city');
@@ -53,7 +71,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "correct") {
-                        alert(`إجابة صحيحة! ${city}: ${data.info}`);
+                        this.classList.add("correct");
+                        score++;
+                        document.getElementById("score").textContent = score + " / " + totalQuestions;
                     } else {
                         alert("إجابة خاطئة!");
                     }
