@@ -8,17 +8,17 @@
         body {
             text-align: center;
             font-family: Arial, sans-serif;
-            background-color: #eaf2d7;
+            background-color: #e6f2d9;
         }
-        .map-container {
+        #map {
             position: relative;
-            display: inline-block;
-        }
-        .map {
             width: 700px;
             height: 700px;
+            background: url("/static/map.png") no-repeat center center;
+            background-size: cover;
+            margin: auto;
         }
-        .dot {
+        .marker {
             position: absolute;
             width: 10px;
             height: 10px;
@@ -31,23 +31,18 @@
     <h1>لعبة خريطة فلسطين</h1>
     <p>الوقت المتبقي: <span id="timer">60</span> ثانية</p>
     <p>النتيجة: <span id="score">0</span> / 10</p>
-    
-    <div class="map-container">
-        <img src="/static/map.png" class="map" alt="خريطة فلسطين">
-        {% for name, (y, x, category, desc) in locations.items() %}
-            <div class="dot" style="top: {{ y }}px; left: {{ x }}px;" title="{{ name }}: {{ desc }}"></div>
-        {% endfor %}
-    </div>
-    
+    <div id="map"></div>
     <script>
-        let timeLeft = 60;
-        const timerElement = document.getElementById("timer");
-        setInterval(() => {
-            if (timeLeft > 0) {
-                timeLeft--;
-                timerElement.textContent = timeLeft;
-            }
-        }, 1000);
+        const locations = {{ locations | tojson }};
+        const map = document.getElementById("map");
+
+        for (const [name, data] of Object.entries(locations)) {
+            let marker = document.createElement("div");
+            marker.classList.add("marker");
+            marker.style.left = `${data[0]}px`;
+            marker.style.top = `${data[1]}px`;
+            map.appendChild(marker);
+        }
     </script>
 </body>
 </html>
