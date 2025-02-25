@@ -29,7 +29,7 @@ def get_random_cities(count=10):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', locations=locations)
 
 @app.route('/start_game', methods=['GET'])
 def start_game():
