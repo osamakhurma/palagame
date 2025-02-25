@@ -15,8 +15,8 @@
             display: inline-block;
         }
         .map {
-            width: 467px;
-            height: 506px;
+            width: 700px;
+            height: 700px;
         }
         .city-dot {
             position: absolute;
@@ -40,22 +40,22 @@
     
     <div class="map-container">
         <img src="{{ url_for('static', filename='new.png') }}" class="map" alt="خريطة فلسطين">
-        {% for city, data in locations.items() %}
-            <div class="city-dot" data-city="{{ city }}" style="left: {{ data[0] }}px; top: {{ data[1] }}px;"></div>
-        {% endfor %}
-    </div>
-
-    <script>
-        let timeLeft = 60;
-        let score = 0;
-        let totalQuestions = 10;
-        
-        function updateTimer() {
-            document.getElementById("timer").textContent = timeLeft;
-            if (timeLeft === 0) {
-                alert("انتهى الوقت! حصلت على " + score + " / " + totalQuestions);
-                location.reload();
-            }
+        {% for city, data in {
+            "الخليل": (360, 322),
+            "بيت لحم": (411, 279),
+            "القدس": (415, 260),
+            "أريحا": (447, 223),
+            "رام الله": (395, 220),
+            "نابلس": (405, 177),
+            "بئر السبع": (291, 388),
+            "رفح": (213, 374),
+            "غزة": (214, 338),
+            "يافا": (321, 196),
+            "الرملة": (339, 232),
+            "طبريا": (461, 107),
+            "بيسان": (460, 151),
+            "حيفا": (349, 96),
+            "عكا": (374, 71),
             timeLeft--;
         }
         setInterval(updateTimer, 1000);
