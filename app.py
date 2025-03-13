@@ -1,57 +1,49 @@
 from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+import os
 
 app = Flask(__name__)
+CORS(app)
 
-# المدن وإحداثياتها على الخريطة
+# قائمة المدن مع إحداثياتها الصحيحة
 cities = {
-    "القدس": {"x": 282, "y": 368},
-    "الخليل": {"x": 249, "y": 428},
-    "غزة": {"x": 142, "y": 424},
-    "نابلس": {"x": 293, "y": 259},
-    "بيت لحم": {"x": 270, "y": 400},  # تأكد أن القيم دقيقة
-    "يافا": {"x": 199, "y": 313},
-    "بئر السبع": {"x": 198, "y": 490},
-    "رفح": {"x": 106, "y": 477},
-    "جنين": {"x": 299, "y": 207},
-    "أريحا": {"x": 325, "y": 349},
-    "عكا": {"x": 258, "y": 113},
-    "الناصرة": {"x": 297, "y": 161},
-    "صفد": {"x": 339, "y": 98},
-    "حيفا": {"x": 237, "y": 139},
-    "طبريا": {"x": 344, "y": 153}
+    "الخليل": (249, 428),
+    "بئر السبع": (198, 490),
+    "رفح": (106, 477),
+    "غزة": (142, 424),
+    "يافا": (199, 313),
+    "أريحا": (325, 349),
+    "القدس": (282, 368),
+    "نابلس": (293, 259),
+    "جنين": (299, 207),
+    "طبريا": (344, 153),
+    "الناصرة": (297, 161),
+    "صفد": (339, 98),
+    "عكا": (258, 113),
+    "حيفا": (237, 139),
 }
-
-# المدينة الحالية
-current_city = None
 
 @app.route("/")
 def index():
-    return render_template("index.html", cities=cities)
-
-@app.route("/get_question")
-def get_question():
-    import random
-    global current_city
-    current_city = random.choice(list(cities.keys()))
-    return jsonify({"question": f"أين تقع {current_city}؟", "city": current_city})
+    return render_template("index.html")
 
 @app.route("/check_answer", methods=["POST"])
 def check_answer():
-    global current_city
-    if not current_city:
-        return jsonify({"error": "No active question!"})
+    data = request.json
+    city_name = data.get("city")
+    x, y = data.get("x"), data.get("y")
 
-    data = request.get_json()
-    x, y = data["x"], data["y"]
+    if city_name in cities:
+        correct_x, correct_y = cities[city_name]
+        tolerance = 15  # مدى قبول الخطأ في تحديد النقطة
 
-    correct_x = cities[current_city]["x"]
-    correct_y = cities[current_city]["y"]
+        if abs(x - correct_x) <= tolerance and abs(y - correct_y) <= tolerance:
+            return jsonify({"correct": True})
+        else:
+            return jsonify({"correct": False})
 
-    # السماح بهامش خطأ ±10 بيكسل
-    margin = 10
-    correct = (correct_x - margin <= x <= correct_x + margin) and (correct_y - margin <= y <= correct_y + margin)
-
-    return jsonify({"correct": correct})
+    return jsonify({"error": "مدينة غير معروفة"}), 400
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # استخدام المنفذ من البيئة أو 5000 افتراضيًا
+    app.run(host="0.0.0.0", port=port, debug=True)
