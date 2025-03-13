@@ -1,43 +1,36 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, jsonify
+import random
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__)
 
-# قائمة المدن الفلسطينية مع الإحداثيات الصحيحة
+# جميع المدن الفلسطينية مع الإحداثيات (حسب الصورة المستخدمة)
 cities = {
-    "الخليل": (249, 428),
-    "بئر السبع": (198, 490),
-    "رفح": (106, 477),
-    "غزة": (142, 424),
-    "يافا": (199, 313),
-    "أريحا": (325, 349),
-    "القدس": (282, 368),
-    "نابلس": (293, 259),
-    "جنين": (299, 207),
-    "طبريا": (344, 153),
-    "الناصرة": (297, 161),
-    "صفد": (339, 98),
-    "عكا": (258, 113),
-    "حيفا": (237, 139)
+    "القدس": {"x": 282, "y": 368},
+    "الخليل": {"x": 249, "y": 428},
+    "غزة": {"x": 142, "y": 424},
+    "نابلس": {"x": 293, "y": 259},
+    "يافا": {"x": 199, "y": 313},
+    "أريحا": {"x": 325, "y": 349},
+    "جنين": {"x": 299, "y": 207},
+    "طبريا": {"x": 344, "y": 153},
+    "الناصرة": {"x": 297, "y": 161},
+    "صفد": {"x": 339, "y": 98},
+    "عكا": {"x": 258, "y": 113},
+    "حيفا": {"x": 237, "y": 139},
+    "بئر السبع": {"x": 198, "y": 490},
+    "رفح": {"x": 106, "y": 477}
 }
 
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
 
-@app.route('/check_answer', methods=['POST'])
-def check_answer():
-    data = request.json
-    city_name = data.get("city")
-    x, y = data.get("x"), data.get("y")
-
-    if city_name in cities:
-        correct_x, correct_y = cities[city_name]
-        distance = ((x - correct_x) ** 2 + (y - correct_y) ** 2) ** 0.5
-
-        if distance < 20:  # هامش خطأ بسيط
-            return jsonify({"correct": True})
-    
-    return jsonify({"correct": False})
+@app.route('/get_question')
+def get_question():
+    city = random.choice(list(cities.keys()))
+    return jsonify({"question": f"أين تقع مدينة {city}؟", "city": city, "coords": cities[city]})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    import os
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port, debug=True)
