@@ -3,58 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>اختبار مدن فلسطين</title>
+    <title>لعبة خريطة فلسطين</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        .map-container { position: relative; display: inline-block; }
-        .city-point {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            position: absolute;
-            background-color: blue;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            direction: rtl;
         }
-        .correct { background-color: green !important; }
-        .wrong { background-color: red !important; }
+        #map-container {
+            position: relative;
+            display: inline-block;
+        }
+        #map {
+            width: 486px;
+            height: 900px;
+        }
+        .city-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: blue;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: background-color 0.5s;
+        }
     </style>
 </head>
 <body>
-    <h2>أين تقع <span id="question-city">؟؟؟</span>؟</h2>
-    <p>اضغط على الخريطة لتحديد الموقع</p>
-    <div class="map-container">
-        <img src="static/213.png" width="486" height="900" alt="خريطة فلسطين">
-        
-        {% for city, data in locations.items() %}
-            <div class="city-point" 
-                 data-city="{{ city }}"
-                 style="left: {{ (data[0] / 486) * 100 }}%; top: {{ (data[1] / 900) * 100 }}%;">
+
+    <h2 id="question">أين تقع هذه المدينة؟</h2>
+    <p>اضغط على الخريطة لاختيار الموقع</p>
+
+    <div id="map-container">
+        <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين">
+        {% for city, coords in cities.items() %}
+            <div class="city-dot" id="dot-{{ city }}" 
+                style="left: {{ coords.x }}px; top: {{ coords.y }}px;">
             </div>
         {% endfor %}
     </div>
 
     <script>
-        const locations = {{ locations | tojson }};
-        let cities = Object.keys(locations);
-        let currentCity = cities[Math.floor(Math.random() * cities.length)];
-        document.getElementById("question-city").textContent = currentCity;
+        let currentCity = "";
 
-        document.querySelectorAll(".city-point").forEach(point => {
-            point.addEventListener("click", function() {
-                let selectedCity = this.getAttribute("data-city");
-                if (selectedCity === currentCity) {
-                    this.classList.add("correct");
+        // جلب سؤال جديد
+        function getNewQuestion() {
+            fetch("/get_question")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("question").innerText = data.question;
+                    currentCity = data.city;
+                });
+        }
+
+        // التحقق من الإجابة
+        document.getElementById("map-container").addEventListener("click", function(event) {
+            let rect = event.target.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+
+            fetch("/check_answer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ x: x, y: y })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.correct) {
+                    document.getElementById(`dot-${currentCity}`).style.backgroundColor = "green";
                 } else {
-                    this.classList.add("wrong");
+                    document.getElementById(`dot-${currentCity}`).style.backgroundColor = "red";
                 }
+
+                // يرجع اللون الأزرق بعد 1.5 ثانية
                 setTimeout(() => {
-                    this.classList.remove("correct", "wrong");
-                    currentCity = cities[Math.floor(Math.random() * cities.length)];
-                    document.getElementById("question-city").textContent = currentCity;
+                    document.getElementById(`dot-${currentCity}`).style.backgroundColor = "blue";
+                    getNewQuestion();
                 }, 1500);
             });
         });
+
+        // تحميل السؤال الأول عند فتح الصفحة
+        getNewQuestion();
     </script>
+
 </body>
 </html>
