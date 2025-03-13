@@ -1,11 +1,8 @@
 from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
-import os
 
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder='static')
 
-# قائمة المدن مع إحداثياتها الصحيحة
+# قائمة المدن الفلسطينية مع الإحداثيات الصحيحة
 cities = {
     "الخليل": (249, 428),
     "بئر السبع": (198, 490),
@@ -20,14 +17,14 @@ cities = {
     "الناصرة": (297, 161),
     "صفد": (339, 98),
     "عكا": (258, 113),
-    "حيفا": (237, 139),
+    "حيفا": (237, 139)
 }
 
-@app.route("/")
+@app.route('/')
 def index():
-    return render_template("index.html")
+    return render_template('index.html')
 
-@app.route("/check_answer", methods=["POST"])
+@app.route('/check_answer', methods=['POST'])
 def check_answer():
     data = request.json
     city_name = data.get("city")
@@ -35,15 +32,12 @@ def check_answer():
 
     if city_name in cities:
         correct_x, correct_y = cities[city_name]
-        tolerance = 15  # مدى قبول الخطأ في تحديد النقطة
+        distance = ((x - correct_x) ** 2 + (y - correct_y) ** 2) ** 0.5
 
-        if abs(x - correct_x) <= tolerance and abs(y - correct_y) <= tolerance:
+        if distance < 20:  # هامش خطأ بسيط
             return jsonify({"correct": True})
-        else:
-            return jsonify({"correct": False})
+    
+    return jsonify({"correct": False})
 
-    return jsonify({"error": "مدينة غير معروفة"}), 400
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # استخدام المنفذ من البيئة أو 5000 افتراضيًا
-    app.run(host="0.0.0.0", port=port, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
