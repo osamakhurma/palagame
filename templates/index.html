@@ -3,91 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة مدن فلسطين</title>
+    <title>اختبار مدن فلسطين</title>
     <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-        }
-        h2 {
-            margin-bottom: 10px;
-        }
-        #map-container {
-            position: relative;
-            width: 486px;
-            height: 900px;
-            margin: auto;
-        }
-        #map {
-            width: 100%;
-            height: 100%;
-        }
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .map-container { position: relative; display: inline-block; }
         .city-point {
-            position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
+            position: absolute;
             background-color: blue;
             transform: translate(-50%, -50%);
-            transition: background-color 0.5s;
+            cursor: pointer;
         }
+        .correct { background-color: green !important; }
+        .wrong { background-color: red !important; }
     </style>
 </head>
 <body>
-    <h2>أين تقع مدينة <span id="question">{{ question }}</span>؟</h2>
+    <h2>أين تقع <span id="question-city">؟؟؟</span>؟</h2>
     <p>اضغط على الخريطة لتحديد الموقع</p>
-
-    <div id="map-container">
-        <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" onclick="placeMarker(event)">
-        <div id="markers"></div>
+    <div class="map-container">
+        <img src="static/213.png" width="486" height="900" alt="خريطة فلسطين">
+        
+        {% for city, data in locations.items() %}
+            <div class="city-point" 
+                 data-city="{{ city }}"
+                 style="left: {{ (data[0] / 486) * 100 }}%; top: {{ (data[1] / 900) * 100 }}%;">
+            </div>
+        {% endfor %}
     </div>
 
     <script>
-        let locations = {{ locations | tojson | safe }};
-        let currentQuestion = "{{ question }}";
+        const locations = {{ locations | tojson }};
+        let cities = Object.keys(locations);
+        let currentCity = cities[Math.floor(Math.random() * cities.length)];
+        document.getElementById("question-city").textContent = currentCity;
 
-        function placeMarker(event) {
-            let map = document.getElementById("map");
-            let rect = map.getBoundingClientRect();
-            let x = event.clientX - rect.left;
-            let y = event.clientY - rect.top;
-
-            let marker = document.createElement("div");
-            marker.classList.add("city-point");
-            marker.style.left = `${x}px`;
-            marker.style.top = `${y}px`;
-            document.getElementById("map-container").appendChild(marker);
-
-            checkAnswer(x, y, marker);
-        }
-
-        function checkAnswer(x, y, marker) {
-            fetch("/check_answer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ city: currentQuestion, x: x, y: y })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.correct) {
-                    marker.style.backgroundColor = "green";
+        document.querySelectorAll(".city-point").forEach(point => {
+            point.addEventListener("click", function() {
+                let selectedCity = this.getAttribute("data-city");
+                if (selectedCity === currentCity) {
+                    this.classList.add("correct");
                 } else {
-                    marker.style.backgroundColor = "red";
+                    this.classList.add("wrong");
                 }
-                setTimeout(() => marker.remove(), 1500);
-                getNextQuestion();
+                setTimeout(() => {
+                    this.classList.remove("correct", "wrong");
+                    currentCity = cities[Math.floor(Math.random() * cities.length)];
+                    document.getElementById("question-city").textContent = currentCity;
+                }, 1500);
             });
-        }
-
-        function getNextQuestion() {
-            fetch("/get_question")
-            .then(response => response.json())
-            .then(data => {
-                currentQuestion = data.question;
-                document.getElementById("question").innerText = currentQuestion;
-            });
-        }
+        });
     </script>
 </body>
 </html>
