@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, jsonify, request
 import os
-import random
 
 app = Flask(__name__)
 
+# بيانات المواقع مع المعلومات
 locations = {
     "الخليل": (346, 347, "governorate", "تشتهر بصناعة الزجاج والخزف"),
     "بيت لحم": (299, 396, "city", "تشتهر بكنيسة المهد"),
@@ -25,33 +25,31 @@ locations = {
     "الناصرة": (127, 404, "city", "مشهورة بكنيسة البشارة"),
 }
 
-stages = ["مدن", "محافظات"]
-num_questions_per_stage = 5
-max_time_per_stage = 30  # بالثواني
+# تعريف المراحل
+stages = [
+    {"name": "المدن", "questions": 5},
+    {"name": "المحافظات", "questions": 5}
+]
+
+# الزمن لكل مرحلة
+max_time_per_stage = 30
 
 @app.route('/')
 def index():
-    return render_template('index.html', stages=stages, time=max_time_per_stage)
+    return render_template('index.html', locations=locations, stages=stages, time=max_time_per_stage)
 
-@app.route('/start_game', methods=['POST'])
-def start_game():
-    stage = request.json.get("stage", 0)
-    if stage >= len(stages):
-        return jsonify({"message": "اللعبة انتهت!", "success": False})
+# API لتحديث النقاط أو تسجيل الإجابات
+@app.route('/submit_answer', methods=['POST'])
+def submit_answer():
+    data = request.get_json()
+    if not data or "city" not in data:
+        return jsonify({"error": "Invalid data"}), 400
     
-    questions = random.sample(list(locations.keys()), num_questions_per_stage)
-    return jsonify({"stage": stages[stage], "questions": questions, "time": max_time_per_stage})
-
-@app.route('/check_answer', methods=['POST'])
-def check_answer():
-    data = request.json
-    city = data.get("city")
-    answer = data.get("answer")
-    
-    if city in locations and answer == city:
+    city = data["city"]
+    if city in locations:
         return jsonify({"correct": True, "info": locations[city][3]})
-    return jsonify({"correct": False})
+    return jsonify({"correct": False, "info": "إجابة غير صحيحة"}), 400
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))  
     app.run(host="0.0.0.0", port=port, debug=True)
