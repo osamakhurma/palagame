@@ -5,52 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>اختبار خريطة فلسطين</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        #map { width: 600px; cursor: pointer; }
-        #message { font-size: 20px; margin-top: 10px; }
+        body { text-align: center; font-family: Arial, sans-serif; direction: rtl; }
+        .map-container { position: relative; display: inline-block; }
+        #map { width: 500px; height: auto; cursor: pointer; }
+        .marker { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; transform: translate(-50%, -50%); display: none; }
+        #result { font-size: 20px; margin-top: 10px; }
+        .correct { color: green; }
+        .wrong { color: red; }
     </style>
 </head>
 <body>
-
     <h1>اختبار خريطة فلسطين</h1>
-    <p id="question">أين تقع مدينة القدس؟</p>
-    <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين">
-    <p id="message"></p>
+    <p id="question">جاري تحميل السؤال...</p>
+    <div class="map-container">
+        <img id="map" src="{{ url_for('static', filename='palestine_map.png') }}" alt="خريطة فلسطين">
+        <div id="marker" class="marker"></div>
+    </div>
+    <p id="result"></p>
+    <button onclick="fetchQuestion()">سؤال جديد</button>
 
     <script>
-        const cities = ["الخليل", "بئر السبع", "رفح", "غزة", "يافا", "أريحا", "القدس", "نابلس", "جنين", "طبريا", "الناصرة", "صفد", "عكا", "حيفا"];
-        let currentCityIndex = 6; // نبدأ بالسؤال عن القدس
+        let currentCity = null;
+        let correctCoords = null;
 
-        document.getElementById("map").addEventListener("click", function(event) {
-            let rect = event.target.getBoundingClientRect();
+        function fetchQuestion() {
+            fetch('/get_question')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('question').innerText = data.question;
+                    currentCity = data.city;
+                    correctCoords = data.coords;
+                    document.getElementById('result').innerHTML = "";
+                    document.getElementById('marker').style.display = "none";
+                });
+        }
+
+        document.getElementById('map').addEventListener('click', function (event) {
+            let rect = this.getBoundingClientRect();
             let x = event.clientX - rect.left;
             let y = event.clientY - rect.top;
-            let city = cities[currentCityIndex];
 
-            fetch("/check_answer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ city: city, x: x, y: y })
-            })
-            .then(response => response.json())
-            .then(data => {
-                let message = document.getElementById("message");
-                if (data.correct) {
-                    message.innerHTML = "✅ إجابة صحيحة!";
-                    message.style.color = "green";
-                    nextQuestion();
-                } else {
-                    message.innerHTML = "❌ إجابة خاطئة، حاول مرة أخرى!";
-                    message.style.color = "red";
-                }
-            });
+            let marker = document.getElementById('marker');
+            marker.style.left = `${x}px`;
+            marker.style.top = `${y}px`;
+            marker.style.display = "block";
+
+            let dx = Math.abs(x - correctCoords.x);
+            let dy = Math.abs(y - correctCoords.y);
+
+            if (dx < 20 && dy < 20) {
+                document.getElementById('result').innerHTML = "✅ إجابة صحيحة!";
+                document.getElementById('result').classList = "correct";
+            } else {
+                document.getElementById('result').innerHTML = "❌ إجابة خاطئة، حاول مرة أخرى!";
+                document.getElementById('result').classList = "wrong";
+            }
         });
 
-        function nextQuestion() {
-            currentCityIndex = (currentCityIndex + 1) % cities.length;
-            document.getElementById("question").innerText = `أين تقع مدينة ${cities[currentCityIndex]}؟`;
-        }
+        fetchQuestion();
     </script>
-
 </body>
 </html>
