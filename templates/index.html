@@ -4,81 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لعبة مدن فلسطين</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+        #map-container {
+            position: relative;
+            width: 486px;
+            height: 900px;
+            margin: auto;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .city-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: blue;
+            transform: translate(-50%, -50%);
+            transition: background-color 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <h2>أين تقع مدينة <span id="question">{{ question }}</span>؟</h2>
+    <p>اضغط على الخريطة لتحديد الموقع</p>
+
+    <div id="map-container">
+        <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" onclick="placeMarker(event)">
+        <div id="markers"></div>
+    </div>
+
     <script>
         let locations = {{ locations | tojson | safe }};
-        let stages = {{ stages | tojson | safe }};
-        let maxTime = {{ time }};
-        let currentStage = 0;
-        let score = 0;
-        let timer;
+        let currentQuestion = "{{ question }}";
 
-        function startGame() {
-            document.getElementById("startScreen").style.display = "none";
-            document.getElementById("gameScreen").style.display = "block";
-            startStage();
+        function placeMarker(event) {
+            let map = document.getElementById("map");
+            let rect = map.getBoundingClientRect();
+            let x = event.clientX - rect.left;
+            let y = event.clientY - rect.top;
+
+            let marker = document.createElement("div");
+            marker.classList.add("city-point");
+            marker.style.left = `${x}px`;
+            marker.style.top = `${y}px`;
+            document.getElementById("map-container").appendChild(marker);
+
+            checkAnswer(x, y, marker);
         }
 
-        function startStage() {
-            let stage = stages[currentStage];
-            document.getElementById("stageName").innerText = stage.name;
-            let timeLeft = maxTime;
-            document.getElementById("timer").innerText = `الوقت: ${timeLeft} ثانية`;
-
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById("timer").innerText = `الوقت: ${timeLeft} ثانية`;
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    alert("انتهى الوقت!");
-                    nextStage();
-                }
-            }, 1000);
-        }
-
-        function checkAnswer(city) {
-            fetch("/submit_answer", {
+        function checkAnswer(x, y, marker) {
+            fetch("/check_answer", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ city })
+                body: JSON.stringify({ city: currentQuestion, x: x, y: y })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.correct) {
-                    score++;
-                    alert(`صحيح! ${data.info}`);
+                    marker.style.backgroundColor = "green";
                 } else {
-                    alert("إجابة خاطئة!");
+                    marker.style.backgroundColor = "red";
                 }
-            })
-            .catch(error => console.error("Error:", error));
+                setTimeout(() => marker.remove(), 1500);
+                getNextQuestion();
+            });
         }
 
-        function nextStage() {
-            clearInterval(timer);
-            if (currentStage < stages.length - 1) {
-                currentStage++;
-                startStage();
-            } else {
-                alert(`انتهت اللعبة! نتيجتك: ${score}`);
-            }
+        function getNextQuestion() {
+            fetch("/get_question")
+            .then(response => response.json())
+            .then(data => {
+                currentQuestion = data.question;
+                document.getElementById("question").innerText = currentQuestion;
+            });
         }
     </script>
-</head>
-<body>
-    <div id="startScreen">
-        <h1>مرحبًا بك في لعبة مدن فلسطين</h1>
-        <button onclick="startGame()">ابدأ</button>
-    </div>
-
-    <div id="gameScreen" style="display: none;">
-        <h2 id="stageName"></h2>
-        <p id="timer"></p>
-        <p>اختر مدينة:</p>
-        <ul>
-            {% for city in locations.keys() %}
-                <li><button onclick="checkAnswer('{{ city }}')">{{ city }}</button></li>
-            {% endfor %}
-        </ul>
-    </div>
 </body>
 </html>
