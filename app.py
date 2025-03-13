@@ -1,53 +1,58 @@
 from flask import Flask, render_template, jsonify, request
+import random
 
 app = Flask(__name__)
 
-# قائمة المدن مع إحداثياتها
-locations = {
-    "الخليل": (346, 347),
-    "بيت لحم": (299, 396),
-    "القدس": (279, 399),
-    "أريحا": (239, 430),
-    "رام الله": (236, 380),
-    "نابلس": (190, 390),
-    "بئر السبع": (416, 280),
-    "رفح": (401, 205),
-    "غزة": (363, 206),
-    "يافا": (211, 309),
-    "الرملة": (249, 326),
-    "طبريا": (115, 444),
-    "بيسان": (162, 443),
-    "حيفا": (103, 336),
-    "عكا": (77, 360),
-    "صفد": (64, 441),
-    "جنين": (160, 390),
-    "الناصرة": (127, 404),
+# كل المدن مع الإحداثيات بناءً على الخريطة 486x900
+cities = {
+    "الخليل": {"x": 249, "y": 428},
+    "بئر السبع": {"x": 198, "y": 490},
+    "رفح": {"x": 106, "y": 477},
+    "غزة": {"x": 142, "y": 424},
+    "يافا": {"x": 199, "y": 313},
+    "أريحا": {"x": 325, "y": 349},
+    "القدس": {"x": 282, "y": 368},
+    "نابلس": {"x": 293, "y": 259},
+    "جنين": {"x": 299, "y": 207},
+    "طبريا": {"x": 344, "y": 153},
+    "الناصرة": {"x": 297, "y": 161},
+    "صفد": {"x": 339, "y": 98},
+    "عكا": {"x": 258, "y": 113},
+    "حيفا": {"x": 237, "y": 139}
 }
 
-# اختيار مدينة عشوائية لسؤال المستخدم
-import random
-def get_new_city():
-    return random.choice(list(locations.keys()))
-
-current_city = get_new_city()
+# المدينة الحالية للسؤال
+current_question = {"city": None}
 
 @app.route('/')
 def index():
-    return render_template('index.html', city=current_city, locations=locations)
+    return render_template('index.html', cities=cities)
 
-@app.route('/check', methods=['POST'])
-def check_location():
-    global current_city
+@app.route('/get_question')
+def get_question():
+    """إرسال سؤال عشوائي عن مدينة"""
+    current_question["city"] = random.choice(list(cities.keys()))
+    return jsonify({"question": f"أين تقع مدينة {current_question['city']}؟", "city": current_question["city"]})
+
+@app.route('/check_answer', methods=['POST'])
+def check_answer():
+    """التأكد إذا كان اللاعب اختار الموقع الصحيح"""
     data = request.json
-    x, y = data['x'], data['y']
-    city_x, city_y = locations[current_city]
-    
-    correct = abs(x - city_x) <= 15 and abs(y - city_y) <= 15  # هامش الخطأ 15 بكسل
-    
-    if correct:
-        current_city = get_new_city()
-    
-    return jsonify({"correct": correct, "new_city": current_city})
+    selected_x = data['x']
+    selected_y = data['y']
+    correct_city = current_question["city"]
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    if correct_city:
+        correct_x = cities[correct_city]["x"]
+        correct_y = cities[correct_city]["y"]
+        distance = ((selected_x - correct_x) ** 2 + (selected_y - correct_y) ** 2) ** 0.5
+
+        if distance < 20:  # السماح بهامش خطأ بسيط
+            return jsonify({"correct": True})
+        else:
+            return jsonify({"correct": False})
+
+    return jsonify({"error": "لم يتم تحديد سؤال بعد!"}), 400
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
