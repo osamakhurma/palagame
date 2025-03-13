@@ -3,46 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة خريطة فلسطين</title>
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            background-color: #e6f2d9;
-        }
-        #map {
-            position: relative;
-            width: 486px;
-            height: 900px;
-            background: url("/static/213.png") no-repeat center center;
-            background-size: cover;
-            margin: auto;
-        }
-        .marker {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: red;
-            border-radius: 50%;
-        }
-    </style>
-</head>
-<body>
-    <h1>لعبة خريطة فلسطين</h1>
-    <p>الوقت المتبقي: <span id="timer">60</span> ثانية</p>
-    <p>النتيجة: <span id="score">0</span> / 10</p>
-    <div id="map"></div>
+    <title>لعبة مدن فلسطين</title>
     <script>
-        const locations = {{ locations | tojson }};
-        const map = document.getElementById("map");
+        let locations = {{ locations | tojson | safe }};
+        let stages = {{ stages | tojson | safe }};
+        let maxTime = {{ time }};
+        let currentStage = 0;
+        let score = 0;
+        let timer;
 
-        for (const [name, data] of Object.entries(locations)) {
-            let marker = document.createElement("div");
-            marker.classList.add("marker");
-            marker.style.left = `${data[0]}px`;
-            marker.style.top = `${data[1]}px`;
-            map.appendChild(marker);
+        function startGame() {
+            document.getElementById("startScreen").style.display = "none";
+            document.getElementById("gameScreen").style.display = "block";
+            startStage();
+        }
+
+        function startStage() {
+            let stage = stages[currentStage];
+            document.getElementById("stageName").innerText = stage.name;
+            let timeLeft = maxTime;
+            document.getElementById("timer").innerText = `الوقت: ${timeLeft} ثانية`;
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = `الوقت: ${timeLeft} ثانية`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    alert("انتهى الوقت!");
+                    nextStage();
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(city) {
+            fetch("/submit_answer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ city })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.correct) {
+                    score++;
+                    alert(`صحيح! ${data.info}`);
+                } else {
+                    alert("إجابة خاطئة!");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function nextStage() {
+            clearInterval(timer);
+            if (currentStage < stages.length - 1) {
+                currentStage++;
+                startStage();
+            } else {
+                alert(`انتهت اللعبة! نتيجتك: ${score}`);
+            }
         }
     </script>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>مرحبًا بك في لعبة مدن فلسطين</h1>
+        <button onclick="startGame()">ابدأ</button>
+    </div>
+
+    <div id="gameScreen" style="display: none;">
+        <h2 id="stageName"></h2>
+        <p id="timer"></p>
+        <p>اختر مدينة:</p>
+        <ul>
+            {% for city in locations.keys() %}
+                <li><button onclick="checkAnswer('{{ city }}')">{{ city }}</button></li>
+            {% endfor %}
+        </ul>
+    </div>
 </body>
 </html>
