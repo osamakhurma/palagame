@@ -1,10 +1,8 @@
 from flask import Flask, render_template, jsonify, request
-import os
-import random
 
 app = Flask(__name__)
 
-# بيانات المدن مع الإحداثيات
+# قائمة المدن مع إحداثياتها
 locations = {
     "الخليل": (346, 347),
     "بيت لحم": (299, 396),
@@ -26,35 +24,30 @@ locations = {
     "الناصرة": (127, 404),
 }
 
-# توليد سؤال عشوائي
-def get_random_city():
+# اختيار مدينة عشوائية لسؤال المستخدم
+import random
+def get_new_city():
     return random.choice(list(locations.keys()))
+
+current_city = get_new_city()
 
 @app.route('/')
 def index():
-    return render_template('index.html', locations=locations, question=get_random_city())
+    return render_template('index.html', city=current_city, locations=locations)
 
-@app.route('/get_question')
-def get_question():
-    return jsonify({"question": get_random_city()})
-
-@app.route('/check_answer', methods=['POST'])
-def check_answer():
-    data = request.get_json()
-    city = data.get("city")
-    x, y = data.get("x"), data.get("y")
-
-    if city not in locations:
-        return jsonify({"correct": False})
-
-    actual_x, actual_y = locations[city]
-    tolerance = 20  # مدى السماح للخطأ بالنقر
-
-    if abs(x - actual_x) <= tolerance and abs(y - actual_y) <= tolerance:
-        return jsonify({"correct": True})
+@app.route('/check', methods=['POST'])
+def check_location():
+    global current_city
+    data = request.json
+    x, y = data['x'], data['y']
+    city_x, city_y = locations[current_city]
     
-    return jsonify({"correct": False})
+    correct = abs(x - city_x) <= 15 and abs(y - city_y) <= 15  # هامش الخطأ 15 بكسل
+    
+    if correct:
+        current_city = get_new_city()
+    
+    return jsonify({"correct": correct, "new_city": current_city})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(debug=True)
