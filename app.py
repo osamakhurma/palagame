@@ -1,55 +1,60 @@
 from flask import Flask, render_template, jsonify, request
 import os
+import random
 
 app = Flask(__name__)
 
-# بيانات المواقع مع المعلومات
+# بيانات المدن مع الإحداثيات
 locations = {
-    "الخليل": (346, 347, "governorate", "تشتهر بصناعة الزجاج والخزف"),
-    "بيت لحم": (299, 396, "city", "تشتهر بكنيسة المهد"),
-    "القدس": (279, 399, "city", "مشهورة بالمعالم التاريخية والدينية"),
-    "أريحا": (239, 430, "city", "من أقدم مدن العالم"),
-    "رام الله": (236, 380, "governorate", "مركز ثقافي مهم"),
-    "نابلس": (190, 390, "governorate", "مشهورة بالكنافة النابلسية"),
-    "بئر السبع": (416, 280, "governorate", "أكبر مدن النقب"),
-    "رفح": (401, 205, "city", "مدينة حدودية مع مصر"),
-    "غزة": (363, 206, "city", "معروفة بمينائها وتاريخها العريق"),
-    "يافا": (211, 309, "city", "تشتهر بالبرتقال اليافاوي"),
-    "الرملة": (249, 326, "city", "مدينة تاريخية قديمة"),
-    "طبريا": (115, 444, "city", "تقع على بحيرة طبريا"),
-    "بيسان": (162, 443, "city", "مدينة أثرية"),
-    "حيفا": (103, 336, "city", "مشهورة بمينائها"),
-    "عكا": (77, 360, "city", "معروفة بالأسوار التاريخية"),
-    "صفد": (64, 441, "city", "مدينة جبلية تاريخية"),
-    "جنين": (160, 390, "city", "تشتهر بمخيم جنين"),
-    "الناصرة": (127, 404, "city", "مشهورة بكنيسة البشارة"),
+    "الخليل": (346, 347),
+    "بيت لحم": (299, 396),
+    "القدس": (279, 399),
+    "أريحا": (239, 430),
+    "رام الله": (236, 380),
+    "نابلس": (190, 390),
+    "بئر السبع": (416, 280),
+    "رفح": (401, 205),
+    "غزة": (363, 206),
+    "يافا": (211, 309),
+    "الرملة": (249, 326),
+    "طبريا": (115, 444),
+    "بيسان": (162, 443),
+    "حيفا": (103, 336),
+    "عكا": (77, 360),
+    "صفد": (64, 441),
+    "جنين": (160, 390),
+    "الناصرة": (127, 404),
 }
 
-# تعريف المراحل
-stages = [
-    {"name": "المدن", "questions": 5},
-    {"name": "المحافظات", "questions": 5}
-]
-
-# الزمن لكل مرحلة
-max_time_per_stage = 30
+# توليد سؤال عشوائي
+def get_random_city():
+    return random.choice(list(locations.keys()))
 
 @app.route('/')
 def index():
-    return render_template('index.html', locations=locations, stages=stages, time=max_time_per_stage)
+    return render_template('index.html', locations=locations, question=get_random_city())
 
-# API لتحديث النقاط أو تسجيل الإجابات
-@app.route('/submit_answer', methods=['POST'])
-def submit_answer():
+@app.route('/get_question')
+def get_question():
+    return jsonify({"question": get_random_city()})
+
+@app.route('/check_answer', methods=['POST'])
+def check_answer():
     data = request.get_json()
-    if not data or "city" not in data:
-        return jsonify({"error": "Invalid data"}), 400
+    city = data.get("city")
+    x, y = data.get("x"), data.get("y")
+
+    if city not in locations:
+        return jsonify({"correct": False})
+
+    actual_x, actual_y = locations[city]
+    tolerance = 20  # مدى السماح للخطأ بالنقر
+
+    if abs(x - actual_x) <= tolerance and abs(y - actual_y) <= tolerance:
+        return jsonify({"correct": True})
     
-    city = data["city"]
-    if city in locations:
-        return jsonify({"correct": True, "info": locations[city][3]})
-    return jsonify({"correct": False, "info": "إجابة غير صحيحة"}), 400
+    return jsonify({"correct": False})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
