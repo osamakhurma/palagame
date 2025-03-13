@@ -3,89 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة خريطة فلسطين</title>
+    <title>اختبار خريطة فلسطين</title>
     <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-            direction: rtl;
-        }
-        #map-container {
-            position: relative;
-            display: inline-block;
-        }
-        #map {
-            width: 486px;
-            height: 900px;
-        }
-        .city-dot {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background-color: blue;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: background-color 0.5s;
-        }
+        body { text-align: center; font-family: Arial, sans-serif; direction: rtl; }
+        #map-container { position: relative; display: inline-block; }
+        #map { width: 600px; height: auto; cursor: pointer; }
+        #message { font-size: 20px; margin-top: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
-
-    <h2>اختبار خريطة فلسطين</h2>
-    <h3 id="question"></h3>
+    <h1>اختبار خريطة فلسطين</h1>
+    <p id="question">أين تقع مدينة القدس؟</p>
 
     <div id="map-container">
-        <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين">
-        {% for city, coords in cities.items() %}
-            <div class="city-dot" id="dot-{{ city }}" 
-                style="left: {{ coords.x }}px; top: {{ coords.y }}px;">
-            </div>
-        {% endfor %}
+        <img id="map" src="213.png" alt="خريطة فلسطين">
     </div>
 
+    <p id="message"></p>
+
     <script>
-        let currentCity = "";
+        let currentCity = "القدس"; // المدينة الحالية التي يجب اختيارها
+        const cities = ["الخليل", "بئر السبع", "رفح", "غزة", "يافا", "أريحا", "القدس", "نابلس", "جنين", "طبريا", "الناصرة", "صفد", "عكا", "حيفا"];
+        let cityIndex = 0;
 
-        // جلب سؤال جديد
-        function getNewQuestion() {
-            fetch("/get_question")
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("question").innerText = data.question;
-                    currentCity = data.city;
-                });
-        }
-
-        // التحقق من الإجابة
-        document.getElementById("map-container").addEventListener("click", function(event) {
-            let rect = event.target.getBoundingClientRect();
-            let x = event.clientX - rect.left;
-            let y = event.clientY - rect.top;
+        document.getElementById("map").addEventListener("click", function(event) {
+            const rect = event.target.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
 
             fetch("/check_answer", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ x: x, y: y })
+                body: JSON.stringify({ city: currentCity, x: x, y: y })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.correct) {
-                    document.getElementById(`dot-${currentCity}`).style.backgroundColor = "green";
+                    document.getElementById("message").textContent = "✔️ إجابة صحيحة!";
+                    nextCity();
                 } else {
-                    document.getElementById(`dot-${currentCity}`).style.backgroundColor = "red";
+                    document.getElementById("message").textContent = "❌ إجابة خاطئة، حاول مرة أخرى!";
                 }
-
-                // يرجع اللون الأزرق بعد 1.5 ثانية
-                setTimeout(() => {
-                    document.getElementById(`dot-${currentCity}`).style.backgroundColor = "blue";
-                    getNewQuestion();
-                }, 1500);
             });
         });
 
-        // تحميل السؤال الأول عند فتح الصفحة
-        getNewQuestion();
+        function nextCity() {
+            cityIndex++;
+            if (cityIndex < cities.length) {
+                currentCity = cities[cityIndex];
+                document.getElementById("question").textContent = `أين تقع مدينة ${currentCity}؟`;
+            } else {
+                document.getElementById("question").textContent = "🎉 لقد انتهيت من جميع الأسئلة!";
+                document.getElementById("message").textContent = "";
+            }
+        }
     </script>
-
 </body>
 </html>
