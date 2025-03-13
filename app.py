@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify
-import random
+from flask import Flask, render_template
+import os
 
 app = Flask(__name__)
 
@@ -29,4 +29,5 @@ def index():
     return render_template('index.html', locations=locations)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # استخدام البورت الذي تحدده Render
+    app.run(host="0.0.0.0", port=port, debug=True)
