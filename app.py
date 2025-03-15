@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import json
+import csv
 import random
-import os
+from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+
+# ملف لتخزين أسماء اللاعبين
+USERS_FILE = "players.csv"
 
 # قائمة المدن مع إحداثياتها
 cities = {
@@ -24,66 +25,53 @@ cities = {
     "الناصرة": {"x": 297, "y": 161},
 }
 
-# ملف تخزين أسماء الطلاب
-PLAYERS_FILE = "players.json"
+# تخزين الأسماء
+def save_name(name):
+    with open(USERS_FILE, mode="a", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow([name])
 
-def save_player(name):
-    """يحفظ اسم اللاعب في ملف JSON"""
-    if not os.path.exists(PLAYERS_FILE):
-        with open(PLAYERS_FILE, "w") as f:
-            json.dump([], f)
+# جلب الأسماء المسجلة
+def get_names():
+    try:
+        with open(USERS_FILE, mode="r", encoding="utf-8") as file:
+            return [row[0] for row in csv.reader(file)]
+    except FileNotFoundError:
+        return []
 
-    with open(PLAYERS_FILE, "r") as f:
-        players = json.load(f)
-
-    if name not in players:
-        players.append(name)
-
-    with open(PLAYERS_FILE, "w") as f:
-        json.dump(players, f)
+# تخزين المدن اللي تم سؤالها حتى لا تتكرر في الجولة
+asked_cities = set()
 
 @app.route("/", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form.get("name")
-        if name:
-            session["player_name"] = name
-            save_player(name)
-            session["asked_cities"] = []  # تصفير قائمة الأسئلة
-            return redirect(url_for("game"))
-    return render_template("register.html")
+        player_name = request.form.get("player_name")
+        if player_name:
+            save_name(player_name)
+            return render_template("index.html", player_name=player_name)
+    return send_from_directory("", "register.html")
 
 @app.route("/game")
-def game():
-    if "player_name" not in session:
-        return redirect(url_for("register"))
-    return render_template("index.html", player_name=session["player_name"])
+def index():
+    return render_template("index.html")
 
 @app.route("/get_question")
 def get_question():
-    asked_cities = session.get("asked_cities", [])
-    remaining_cities = [city for city in cities.keys() if city not in asked_cities]
+    global asked_cities
+    available_cities = list(set(cities.keys()) - asked_cities)
 
-    if not remaining_cities:
-        session["asked_cities"] = []
-        remaining_cities = list(cities.keys())
+    if not available_cities:  # إذا خلصت المدن، نعيد القائمة
+        asked_cities.clear()
+        available_cities = list(cities.keys())
 
-    city = random.choice(remaining_cities)
-    asked_cities.append(city)
-    session["asked_cities"] = asked_cities
+    city = random.choice(available_cities)
+    asked_cities.add(city)
 
     return jsonify({"question": f"أين تقع مدينة {city}؟", "city": city, "coords": cities[city]})
 
 @app.route("/players")
 def players():
-    """عرض قائمة الطلاب اللي لعبوا"""
-    if not os.path.exists(PLAYERS_FILE):
-        return jsonify([])
-
-    with open(PLAYERS_FILE, "r") as f:
-        players = json.load(f)
-    
-    return jsonify(players)
+    return jsonify(get_names())
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(debug=True)
