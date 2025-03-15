@@ -7,8 +7,11 @@
     <style>
         body { text-align: center; font-family: Arial, sans-serif; direction: rtl; }
         .map-container { position: relative; display: inline-block; }
-        #map { width: 500px; height: auto; cursor: pointer; }
-        .marker { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; transform: translate(-50%, -50%); display: none; }
+        #map { width: 500px; height: auto; }
+        .marker { 
+            position: absolute; width: 15px; height: 15px; background: blue; 
+            border-radius: 50%; transform: translate(-50%, -50%); cursor: pointer; 
+        }
         #result { font-size: 20px; margin-top: 10px; }
         .correct { color: green; }
         .wrong { color: red; }
@@ -19,13 +22,19 @@
     <p id="question">جاري تحميل السؤال...</p>
     <div class="map-container">
         <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين">
-        <div id="marker" class="marker"></div>
+        
+        <!-- إضافة النقاط على الخريطة -->
+        {% for city, coords in cities.items() %}
+            <div class="marker" id="marker-{{ city }}" 
+                 style="left: {{ coords.x }}px; top: {{ coords.y }}px;" 
+                 onclick="checkAnswer('{{ city }}')">
+            </div>
+        {% endfor %}
     </div>
     <p id="result"></p>
 
     <script>
         let currentCity = null;
-        let correctCoords = null;
 
         function fetchQuestion() {
             fetch('/get_question')
@@ -33,33 +42,19 @@
                 .then(data => {
                     document.getElementById('question').innerText = data.question;
                     currentCity = data.city;
-                    correctCoords = data.coords;
                     document.getElementById('result').innerHTML = "";
-                    document.getElementById('marker').style.display = "none";
                 });
         }
 
-        document.getElementById('map').addEventListener('click', function (event) {
-            let rect = this.getBoundingClientRect();
-            let x = event.clientX - rect.left;
-            let y = event.clientY - rect.top;
-
-            let marker = document.getElementById('marker');
-            marker.style.left = `${x}px`;
-            marker.style.top = `${y}px`;
-            marker.style.display = "block";
-
-            let dx = Math.abs(x - correctCoords.x);
-            let dy = Math.abs(y - correctCoords.y);
-
-            if (dx < 20 && dy < 20) {
+        function checkAnswer(cityClicked) {
+            if (cityClicked === currentCity) {
                 document.getElementById('result').innerHTML = "✅ إجابة صحيحة!";
                 document.getElementById('result').classList = "correct";
             } else {
                 document.getElementById('result').innerHTML = "❌ إجابة خاطئة، حاول مرة أخرى!";
                 document.getElementById('result').classList = "wrong";
             }
-        });
+        }
 
         fetchQuestion();
     </script>
