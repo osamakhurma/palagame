@@ -3,104 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>خريطة فلسطين التفاعلية</title>
+    <title>لعبة مدن فلسطين</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body {
-            text-align: center;
-            font-family: Arial, sans-serif;
-        }
-        #map-container {
-            position: relative;
-            display: inline-block;
-        }
-        #map {
-            width: 486px;
-            height: 900px;
-        }
-        .city-point {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background-color: red;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            cursor: pointer;
-        }
-        #feedback {
-            font-size: 20px;
-            font-weight: bold;
-            color: red;
-        }
+        body { text-align: center; font-family: Arial, sans-serif; }
+        #map-container { position: relative; display: inline-block; }
+        #map { width: 600px; height: auto; }
+        .marker { position: absolute; width: 15px; height: 15px; background-color: red; border-radius: 50%; cursor: pointer; }
+        #question-box { font-size: 24px; margin: 20px 0; }
+        #score, #timer { font-size: 20px; margin: 10px; }
+        #retry-btn { display: none; padding: 10px 20px; font-size: 18px; cursor: pointer; }
     </style>
 </head>
 <body>
+    <h1>لعبة مدن فلسطين</h1>
+    <div id="question-box">جاري تحميل السؤال...</div>
+    <div id="score">الإجابات الصحيحة: 0 / 8</div>
+    <div id="timer">الوقت المتبقي: 30 ثانية</div>
+    <div id="map-container">
+        <img id="map" src="static/213.png" alt="خريطة فلسطين">
+    </div>
+    <button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
 
-<h2>مرحبًا، {{ player_name }}!</h2>
-<h3>اختر خريطة فلسطين</h3>
-<p id="question-text">جارٍ تحميل السؤال...</p>
-
-<div id="map-container">
-    <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" width="486" height="900">
-</div>
-
-<p id="feedback"></p>
-
-<script>
-    let correctCity = "";
-    let correctCoords = {};
-
-    function loadQuestion() {
-        $.get("/get_question", function(data) {
-            correctCity = data.city;
-            correctCoords = data.coords;
-            $("#question-text").text(data.question);
-        });
-    }
-
-    function addCityPoints() {
-        let cities = {
-            "القدس": {x: 282, y: 368},
-            "الخليل": {x: 249, y: 428},
-            "نابلس": {x: 293, y: 259},
-            "جنين": {x: 299, y: 207},
-            "غزة": {x: 142, y: 424},
-            "يافا": {x: 199, y: 313},
-            "حيفا": {x: 237, y: 139},
-            "عكا": {x: 258, y: 113},
-            "صفد": {x: 339, y: 98},
-            "طبريا": {x: 344, y: 153},
-            "أريحا": {x: 325, y: 349},
-            "بئر السبع": {x: 198, y: 490},
-            "رفح": {x: 106, y: 477},
-            "الناصرة": {x: 297, y: 161}
-        };
-
-        for (let city in cities) {
-            let coords = cities[city];
-            let point = $("<div class='city-point'></div>")
-                .css({top: coords.y + "px", left: coords.x + "px"})
-                .attr("data-city", city);
-            
-            $("#map-container").append(point);
+    <script>
+        let correctCity = "";
+        let score = 0;
+        let timeLeft = 30;
+        let timer;
+        
+        function startTimer() {
+            timer = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    $("#timer").text(`الوقت المتبقي: ${timeLeft} ثانية`);
+                } else {
+                    clearInterval(timer);
+                    endGame();
+                }
+            }, 1000);
         }
-    }
+        
+        function loadQuestion() {
+            $.get("/get_question", function(data) {
+                correctCity = data.city;
+                $("#question-box").text(data.question);
+            });
+        }
 
-    $(document).ready(function() {
-        addCityPoints();
-        loadQuestion();
-
-        $(document).on("click", ".city-point", function() {
-            let selectedCity = $(this).attr("data-city");
-            if (selectedCity === correctCity) {
-                $("#feedback").text("إجابة صحيحة! 🎉").css("color", "green");
-            } else {
-                $("#feedback").text("إجابة خاطئة، حاول مرة أخرى! ❌").css("color", "red");
-            }
-            setTimeout(loadQuestion, 1000);
+        $("#map").click(function(event) {
+            let offset = $(this).offset();
+            let x = event.pageX - offset.left;
+            let y = event.pageY - offset.top;
+            
+            $.get("/get_question", function(data) {
+                let cityX = data.coords.x;
+                let cityY = data.coords.y;
+                
+                let distance = Math.sqrt(Math.pow(x - cityX, 2) + Math.pow(y - cityY, 2));
+                
+                if (distance < 20) {
+                    score++;
+                    $("#score").text(`الإجابات الصحيحة: ${score} / 8`);
+                    
+                    if (score === 8) {
+                        clearInterval(timer);
+                        alert("مبروك! لقد فزت!");
+                        endGame();
+                    } else {
+                        loadQuestion();
+                    }
+                }
+            });
         });
-    });
-</script>
-
+        
+        function endGame() {
+            $("#map-container, #question-box, #score, #timer").hide();
+            $("#retry-btn").show();
+        }
+        
+        function restartGame() {
+            score = 0;
+            timeLeft = 30;
+            $("#score").text("الإجابات الصحيحة: 0 / 8");
+            $("#timer").text("الوقت المتبقي: 30 ثانية");
+            $("#map-container, #question-box, #score, #timer").show();
+            $("#retry-btn").hide();
+            startTimer();
+            loadQuestion();
+        }
+        
+        $(document).ready(function() {
+            startTimer();
+            loadQuestion();
+        });
+    </script>
 </body>
 </html>
