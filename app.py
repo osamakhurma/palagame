@@ -1,14 +1,13 @@
-import os
 import csv
 import random
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
 # ملف تخزين أسماء اللاعبين
 USERS_FILE = "players.csv"
 
-# قائمة المدن وإحداثياتها
+# قائمة المدن مع إحداثياتها
 cities = {
     "القدس": {"x": 282, "y": 368},
     "الخليل": {"x": 249, "y": 428},
@@ -26,13 +25,13 @@ cities = {
     "الناصرة": {"x": 297, "y": 161},
 }
 
-# تخزين الأسماء
+# تخزين أسماء اللاعبين
 def save_name(name):
     with open(USERS_FILE, mode="a", newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
         writer.writerow([name])
 
-# جلب الأسماء المسجلة
+# جلب أسماء اللاعبين المسجلين
 def get_names():
     try:
         with open(USERS_FILE, mode="r", encoding="utf-8") as file:
@@ -40,7 +39,7 @@ def get_names():
     except FileNotFoundError:
         return []
 
-# تخزين المدن اللي تم سؤالها حتى لا تتكرر في الجولة
+# قائمة المدن اللي تم سؤالها خلال الجولة
 asked_cities = set()
 
 @app.route("/", methods=["GET", "POST"])
@@ -50,7 +49,7 @@ def register():
         if player_name:
             save_name(player_name)
             return render_template("index.html", player_name=player_name)
-    return send_from_directory("", "register.html")
+    return render_template("register.html")
 
 @app.route("/game")
 def index():
@@ -61,7 +60,7 @@ def get_question():
     global asked_cities
     available_cities = list(set(cities.keys()) - asked_cities)
 
-    if not available_cities:  # إذا خلصت المدن، نعيد القائمة
+    if not available_cities:  # إذا انتهت المدن، نعيد القائمة
         asked_cities.clear()
         available_cities = list(cities.keys())
 
@@ -75,5 +74,4 @@ def players():
     return jsonify(get_names())
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(debug=True)
