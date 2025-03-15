@@ -6,96 +6,153 @@
     <title>لعبة مدن فلسطين</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        #map-container { position: relative; display: inline-block; }
-        #map { width: 600px; height: auto; }
-        .marker { position: absolute; width: 15px; height: 15px; background-color: red; border-radius: 50%; cursor: pointer; }
-        #question-box { font-size: 24px; margin: 20px 0; }
-        #score, #timer { font-size: 20px; margin: 10px; }
-        #retry-btn { display: none; padding: 10px 20px; font-size: 18px; cursor: pointer; }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #question-box {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        #score, #timer {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        #map-container {
+            position: relative;
+            display: inline-block;
+        }
+        #map {
+            width: 486px;
+            height: 900px;
+        }
+        .city-point {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+        #retry-btn {
+            display: none;
+            font-size: 18px;
+            padding: 10px 20px;
+            background-color: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <h1>لعبة مدن فلسطين</h1>
-    <div id="question-box">جاري تحميل السؤال...</div>
-    <div id="score">الإجابات الصحيحة: 0 / 8</div>
-    <div id="timer">الوقت المتبقي: 30 ثانية</div>
-    <div id="map-container">
-        <img id="map" src="static/213.png" alt="خريطة فلسطين">
-    </div>
-    <button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
 
-    <script>
-        let correctCity = "";
-        let score = 0;
-        let timeLeft = 30;
-        let timer;
-        
-        function startTimer() {
-            timer = setInterval(() => {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    $("#timer").text(`الوقت المتبقي: ${timeLeft} ثانية`);
-                } else {
-                    clearInterval(timer);
-                    endGame();
-                }
-            }, 1000);
-        }
-        
-        function loadQuestion() {
-            $.get("/get_question", function(data) {
-                correctCity = data.city;
-                $("#question-box").text(data.question);
-            });
-        }
+<h1>لعبة مدن فلسطين</h1>
+<div id="question-box">جارٍ تحميل السؤال...</div>
+<div id="score">الإجابات الصحيحة: 0 / 8</div>
+<div id="timer">الوقت المتبقي: 30 ثانية</div>
 
-        $("#map").click(function(event) {
-            let offset = $(this).offset();
-            let x = event.pageX - offset.left;
-            let y = event.pageY - offset.top;
+<div id="map-container">
+    <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" width="486" height="900">
+</div>
+
+<p id="feedback"></p>
+<button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
+
+<script>
+    let correctCity = "";
+    let correctCoords = {};
+    let correctAnswers = 0;
+    let timer = 30;
+    let countdown;
+
+    function loadQuestion() {
+        $.get("/get_question", function(data) {
+            correctCity = data.city;
+            correctCoords = data.coords;
+            $("#question-box").text(data.question);
+        });
+    }
+
+    function startTimer() {
+        countdown = setInterval(function() {
+            timer--;
+            $("#timer").text("الوقت المتبقي: " + timer + " ثانية");
+            if (timer <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    function endGame() {
+        clearInterval(countdown);
+        $("#map-container").hide();
+        $("#retry-btn").show();
+        $("#question-box").text("انتهى الوقت! حاول مرة أخرى.");
+    }
+
+    function restartGame() {
+        correctAnswers = 0;
+        timer = 30;
+        $("#score").text("الإجابات الصحيحة: 0 / 8");
+        $("#timer").text("الوقت المتبقي: 30 ثانية");
+        $("#map-container").show();
+        $("#retry-btn").hide();
+        loadQuestion();
+        startTimer();
+    }
+
+    function addCityPoints() {
+        let cities = {
+            "القدس": {x: 282, y: 368},
+            "الخليل": {x: 249, y: 428},
+            "نابلس": {x: 293, y: 259},
+            "جنين": {x: 299, y: 207},
+            "غزة": {x: 142, y: 424},
+            "يافا": {x: 199, y: 313},
+            "حيفا": {x: 237, y: 139},
+            "عكا": {x: 258, y: 113},
+            "صفد": {x: 339, y: 98},
+            "طبريا": {x: 344, y: 153},
+            "أريحا": {x: 325, y: 349},
+            "بئر السبع": {x: 198, y: 490},
+            "رفح": {x: 106, y: 477},
+            "الناصرة": {x: 297, y: 161}
+        };
+
+        for (let city in cities) {
+            let coords = cities[city];
+            let point = $("<div class='city-point'></div>")
+                .css({top: coords.y + "px", left: coords.x + "px"})
+                .attr("data-city", city);
             
-            $.get("/get_question", function(data) {
-                let cityX = data.coords.x;
-                let cityY = data.coords.y;
-                
-                let distance = Math.sqrt(Math.pow(x - cityX, 2) + Math.pow(y - cityY, 2));
-                
-                if (distance < 20) {
-                    score++;
-                    $("#score").text(`الإجابات الصحيحة: ${score} / 8`);
-                    
-                    if (score === 8) {
-                        clearInterval(timer);
-                        alert("مبروك! لقد فزت!");
-                        endGame();
-                    } else {
-                        loadQuestion();
-                    }
+            $("#map-container").append(point);
+        }
+    }
+
+    $(document).ready(function() {
+        addCityPoints();
+        loadQuestion();
+        startTimer();
+
+        $(document).on("click", ".city-point", function() {
+            let selectedCity = $(this).attr("data-city");
+            if (selectedCity === correctCity) {
+                correctAnswers++;
+                $("#score").text("الإجابات الصحيحة: " + correctAnswers + " / 8");
+
+                if (correctAnswers === 8) {
+                    $("#question-box").text("مبروك! فزت باللعبة 🎉");
+                    endGame();
+                } else {
+                    loadQuestion();
                 }
-            });
+            }
         });
-        
-        function endGame() {
-            $("#map-container, #question-box, #score, #timer").hide();
-            $("#retry-btn").show();
-        }
-        
-        function restartGame() {
-            score = 0;
-            timeLeft = 30;
-            $("#score").text("الإجابات الصحيحة: 0 / 8");
-            $("#timer").text("الوقت المتبقي: 30 ثانية");
-            $("#map-container, #question-box, #score, #timer").show();
-            $("#retry-btn").hide();
-            startTimer();
-            loadQuestion();
-        }
-        
-        $(document).ready(function() {
-            startTimer();
-            loadQuestion();
-        });
-    </script>
+    });
+</script>
+
 </body>
 </html>
