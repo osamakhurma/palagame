@@ -1,13 +1,14 @@
+import os
 import csv
 import random
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
-# ملف لتخزين أسماء اللاعبين
+# ملف تخزين أسماء اللاعبين
 USERS_FILE = "players.csv"
 
-# قائمة المدن مع إحداثياتها
+# قائمة المدن وإحداثياتها
 cities = {
     "القدس": {"x": 282, "y": 368},
     "الخليل": {"x": 249, "y": 428},
@@ -74,4 +75,5 @@ def players():
     return jsonify(get_names())
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
