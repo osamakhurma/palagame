@@ -4,10 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        form {
+            margin-top: 20px;
+        }
+        input, button {
+            font-size: 18px;
+            padding: 10px;
+            margin: 5px;
+        }
+    </style>
 </head>
 <body>
     <h1>مرحبًا بك في لعبة فلسطين!</h1>
-    <form method="POST">
+    <form method="POST" action="/start">
         <label for="player_name">أدخل اسمك:</label>
         <input type="text" id="player_name" name="player_name" required>
         <button type="submit">ابدأ</button>
