@@ -3,69 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>اختبار خريطة فلسطين</title>
+    <title>خريطة فلسطين التفاعلية</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; direction: rtl; }
-        .map-container { position: relative; display: inline-block; }
-        #map { width: 486px; height: 900px; cursor: pointer; }
-        .marker { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; transform: translate(-50%, -50%); display: none; }
-        #result { font-size: 22px; font-weight: bold; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; }
-        .correct { color: green; }
-        .wrong { color: red; }
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        #map-container {
+            position: relative;
+            display: inline-block;
+        }
+        #map {
+            width: 486px;
+            height: 900px;
+        }
+        .city-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+        #feedback {
+            font-size: 20px;
+            font-weight: bold;
+            color: red;
+        }
     </style>
 </head>
 <body>
-    <h1>مرحبًا، {{ player_name }}!</h1>
-    <h2>اختبار خريطة فلسطين</h2>
-    <p id="question">جاري تحميل السؤال...</p>
-    <div class="map-container">
-        <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين">
-        <div id="marker" class="marker"></div>
-    </div>
-    <p id="result"></p>
-    <button onclick="fetchQuestion()">سؤال جديد</button>
 
-    <script>
-        let currentCity = null;
-        let correctCoords = null;
+<h2>مرحبًا، {{ player_name }}!</h2>
+<h3>اختر خريطة فلسطين</h3>
+<p id="question-text">جارٍ تحميل السؤال...</p>
 
-        function fetchQuestion() {
-            fetch('/get_question')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('question').innerText = data.question;
-                    currentCity = data.city;
-                    correctCoords = data.coords;
-                    document.getElementById('result').innerHTML = "";
-                    document.getElementById('marker').style.display = "none";
-                });
-        }
+<div id="map-container">
+    <img id="map" src="213.png" alt="خريطة فلسطين">
+</div>
 
-        document.getElementById('map').addEventListener('click', function (event) {
-            let rect = this.getBoundingClientRect();
-            let x = event.clientX - rect.left;
-            let y = event.clientY - rect.top;
+<p id="feedback"></p>
 
-            let marker = document.getElementById('marker');
-            marker.style.left = `${x}px`;
-            marker.style.top = `${y}px`;
-            marker.style.display = "block";
+<script>
+    let correctCity = "";
+    let correctCoords = {};
 
-            let dx = Math.abs(x - correctCoords.x);
-            let dy = Math.abs(y - correctCoords.y);
-
-            let result = document.getElementById('result');
-            if (dx < 20 && dy < 20) {
-                result.innerHTML = "✅ إجابة صحيحة!";
-                result.classList = "correct";
-            } else {
-                result.innerHTML = "❌ إجابة خاطئة، حاول مرة أخرى!";
-                result.classList = "wrong";
-            }
-            result.style.display = "block";
+    function loadQuestion() {
+        $.get("/get_question", function(data) {
+            correctCity = data.city;
+            correctCoords = data.coords;
+            $("#question-text").text(data.question);
         });
+    }
 
-        fetchQuestion();
-    </script>
+    function addCityPoints() {
+        let cities = {
+            "القدس": {x: 282, y: 368},
+            "الخليل": {x: 249, y: 428},
+            "نابلس": {x: 293, y: 259},
+            "جنين": {x: 299, y: 207},
+            "غزة": {x: 142, y: 424},
+            "يافا": {x: 199, y: 313},
+            "حيفا": {x: 237, y: 139},
+            "عكا": {x: 258, y: 113},
+            "صفد": {x: 339, y: 98},
+            "طبريا": {x: 344, y: 153},
+            "أريحا": {x: 325, y: 349},
+            "بئر السبع": {x: 198, y: 490},
+            "رفح": {x: 106, y: 477},
+            "الناصرة": {x: 297, y: 161}
+        };
+
+        for (let city in cities) {
+            let coords = cities[city];
+            let point = $("<div class='city-point'></div>")
+                .css({top: coords.y + "px", left: coords.x + "px"})
+                .attr("data-city", city);
+            
+            $("#map-container").append(point);
+        }
+    }
+
+    $(document).ready(function() {
+        addCityPoints();
+        loadQuestion();
+
+        $(document).on("click", ".city-point", function() {
+            let selectedCity = $(this).attr("data-city");
+            if (selectedCity === correctCity) {
+                $("#feedback").text("إجابة صحيحة! 🎉").css("color", "green");
+            } else {
+                $("#feedback").text("إجابة خاطئة، حاول مرة أخرى! ❌").css("color", "red");
+            }
+            setTimeout(loadQuestion, 1000);
+        });
+    });
+</script>
+
 </body>
 </html>
