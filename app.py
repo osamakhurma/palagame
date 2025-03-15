@@ -1,11 +1,11 @@
 import csv
 import random
 import os
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 
 app = Flask(__name__)
 
-# ملف تخزين أسماء اللاعبين  
+# ملف تخزين أسماء اللاعبين
 USERS_FILE = "players.csv"
 
 # قائمة المدن مع إحداثياتها
@@ -49,11 +49,11 @@ def register():
         player_name = request.form.get("player_name")
         if player_name:
             save_name(player_name)
-            return render_template("index.html", player_name=player_name)
+            return redirect(url_for("game", player_name=player_name))  # تحويل إلى /game
     return render_template("register.html")
 
 @app.route("/game")
-def index():
+def game():
     return render_template("index.html")
 
 @app.route("/get_question")
