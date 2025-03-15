@@ -39,7 +39,7 @@ def get_names():
     except FileNotFoundError:
         return []
 
-# قائمة المدن اللي تم سؤالها خلال الجولة
+# قائمة المدن التي تم سؤالها خلال الجولة
 asked_cities = set()
 
 @app.route("/", methods=["GET", "POST"])
