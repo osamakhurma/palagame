@@ -1,10 +1,11 @@
 import csv
 import random
+import os
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# ملف تخزين أسماء اللاعبين
+# ملف تخزين أسماء اللاعبين  
 USERS_FILE = "players.csv"
 
 # قائمة المدن مع إحداثياتها
@@ -74,4 +75,5 @@ def players():
     return jsonify(get_names())
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    PORT = int(os.environ.get("PORT", 5000))  # يأخذ البورت من البيئة أو 5000 افتراضيًا
+    app.run(host="0.0.0.0", port=PORT, debug=True)
