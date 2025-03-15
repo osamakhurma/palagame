@@ -22,14 +22,13 @@ cities = {
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", cities=cities)
 
 @app.route("/get_question")
 def get_question():
     import random
     city = random.choice(list(cities.keys()))
-    return jsonify({"question": f"أين تقع مدينة {city}؟", "city": city, "coords": cities[city]})
+    return jsonify({"question": f"أين تقع مدينة {city}؟", "city": city})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-    
