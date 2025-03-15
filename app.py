@@ -26,33 +26,10 @@ cities = {
     "الناصرة": {"x": 297, "y": 161},
 }
 
-# تخزين أسماء اللاعبين
-def save_name(name):
-    with open(USERS_FILE, mode="a", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file)
-        writer.writerow([name])
-
-# جلب أسماء اللاعبين المسجلين
-def get_names():
-    try:
-        with open(USERS_FILE, mode="r", encoding="utf-8") as file:
-            return [row[0] for row in csv.reader(file)]
-    except FileNotFoundError:
-        return []
-
 # قائمة المدن التي تم سؤالها خلال الجولة
 asked_cities = set()
 
-@app.route("/", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        player_name = request.form.get("player_name")
-        if player_name:
-            save_name(player_name)
-            return render_template("index.html", player_name=player_name)
-    return render_template("register.html")
-
-@app.route("/game")
+@app.route("/")
 def index():
     return render_template("index.html")
 
@@ -70,10 +47,5 @@ def get_question():
 
     return jsonify({"question": f"أين تقع مدينة {city}؟", "city": city, "coords": cities[city]})
 
-@app.route("/players")
-def players():
-    return jsonify(get_names())
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # استخدم المنفذ الذي توفره Render
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(debug=True)
