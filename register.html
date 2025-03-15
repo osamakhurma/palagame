@@ -4,18 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول</title>
-    <style>
-        body { text-align: center; font-family: Arial, sans-serif; direction: rtl; }
-        form { margin-top: 50px; }
-        input, button { padding: 10px; font-size: 18px; }
-    </style>
 </head>
 <body>
-    <h1>مرحبًا بك في اختبار خريطة فلسطين</h1>
-    <form method="POST">
-        <label>أدخل اسمك للمتابعة:</label><br><br>
-        <input type="text" name="name" required><br><br>
-        <button type="submit">ابدأ</button>
+    <h1>أدخل اسمك للعب</h1>
+    <form action="/" method="post">
+        <input type="text" name="player_name" placeholder="اكتب اسمك هنا" required>
+        <button type="submit">ابدأ اللعب</button>
     </form>
 </body>
 </html>
