@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة اللاعبين</title>
+</head>
+<body>
+    <h1>قائمة اللاعبين</h1>
+    <ul id="players-list"></ul>
+
+    <script>
+        fetch("/players")
+            .then(response => response.json())
+            .then(players => {
+                let list = document.getElementById("players-list");
+                players.forEach(name => {
+                    let li = document.createElement("li");
+                    li.textContent = name;
+                    list.appendChild(li);
+                });
+            });
+    </script>
+</body>
+</html>
