@@ -68,6 +68,24 @@
     let countdown;
     let askedCities = new Set();
     
+    // قائمة المدن مع الإحداثيات
+    const cities = {
+        "القدس": {x: 282, y: 368},
+        "الخليل": {x: 249, y: 428},
+        "نابلس": {x: 293, y: 259},
+        "جنين": {x: 299, y: 207},
+        "غزة": {x: 142, y: 424},
+        "يافا": {x: 199, y: 313},
+        "حيفا": {x: 237, y: 139},
+        "عكا": {x: 258, y: 113},
+        "صفد": {x: 339, y: 98},
+        "طبريا": {x: 344, y: 153},
+        "أريحا": {x: 325, y: 349},
+        "بئر السبع": {x: 198, y: 490},
+        "رفح": {x: 106, y: 477},
+        "الناصرة": {x: 297, y: 161}
+    };
+
     function loadQuestion() {
         $.getJSON("/get_question", function(data) {
             correctCity = data.city;
@@ -101,9 +119,35 @@
         startTimer();
     }
 
+    function createCityPoints() {
+        for (const city in cities) {
+            let point = $("<div class='city-point'></div>");
+            point.css({ 
+                left: cities[city].x + "px", 
+                top: cities[city].y + "px" 
+            });
+
+            point.data("city", city);
+            point.click(function() {
+                let selectedCity = $(this).data("city");
+                if (selectedCity === correctCity) {
+                    correctAnswers++;
+                    $("#score").text(`الإجابات الصحيحة: ${correctAnswers} / 8`);
+                    $("#feedback").text("إجابة صحيحة! 🎉").css("color", "green");
+                    loadQuestion();
+                } else {
+                    $("#feedback").text("إجابة خاطئة! ❌").css("color", "red");
+                }
+            });
+
+            $("#map-container").append(point);
+        }
+    }
+
     $(document).ready(function() {
         loadQuestion();
         startTimer();
+        createCityPoints();
     });
 </script>
 
