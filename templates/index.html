@@ -36,6 +36,26 @@
             transform: translate(-50%, -50%);
             cursor: pointer;
         }
+        #feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 28px;
+            font-weight: bold;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            z-index: 100;
+        }
+        .correct {
+            background-color: green;
+            color: white;
+        }
+        .wrong {
+            background-color: red;
+            color: white;
+        }
         #retry-btn {
             display: none;
             font-size: 18px;
@@ -56,9 +76,9 @@
 
 <div id="map-container">
     <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" width="486" height="900">
+    <div id="feedback"></div>
 </div>
 
-<p id="feedback"></p>
 <button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
 
 <script>
@@ -66,9 +86,7 @@
     let correctAnswers = 0;
     let timer = 30;
     let countdown;
-    let askedCities = new Set();
-    
-    // قائمة المدن مع الإحداثيات
+
     const cities = {
         "القدس": {x: 282, y: 368},
         "الخليل": {x: 249, y: 428},
@@ -133,15 +151,20 @@
                 if (selectedCity === correctCity) {
                     correctAnswers++;
                     $("#score").text(`الإجابات الصحيحة: ${correctAnswers} / 8`);
-                    $("#feedback").text("إجابة صحيحة! 🎉").css("color", "green");
+                    showFeedback("✅ إجابة صحيحة!", "correct");
                     loadQuestion();
                 } else {
-                    $("#feedback").text("إجابة خاطئة! ❌").css("color", "red");
+                    showFeedback("❌ إجابة خاطئة!", "wrong");
                 }
             });
 
             $("#map-container").append(point);
         }
+    }
+
+    function showFeedback(message, type) {
+        $("#feedback").text(message).removeClass("correct wrong").addClass(type).fadeIn(300);
+        setTimeout(() => { $("#feedback").fadeOut(500); }, 1000);
     }
 
     $(document).ready(function() {
