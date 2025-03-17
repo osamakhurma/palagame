@@ -42,10 +42,17 @@
             margin-bottom: 5px;
         }
 
+        /* إطار العلم الفلسطيني حول الخريطة */
         #map-container {
             position: relative;
             display: inline-block;
             margin-top: 15px;
+            border: 20px solid;
+            border-top-color: black;
+            border-right-color: white;
+            border-bottom-color: green;
+            border-left-color: red;
+            border-radius: 10px;
         }
 
         #map {
@@ -125,7 +132,7 @@
 <script>
     let correctCity = "";
     let correctAnswers = 0;
-    let timer = 30;
+    let timer = 60; // زيادة الوقت إلى 60 ثانية
     let countdown;
     let askedCities = new Set();
     let progressBar;
@@ -148,7 +155,7 @@
     function startTimer() {
         progressBar = new ProgressBar.Circle("#timer-circle", {
             strokeWidth: 10,
-            duration: 30000,
+            duration: 60000, // 60 ثانية
             color: "#fff",
             trailColor: "#444",
             trailWidth: 5,
@@ -156,12 +163,13 @@
         });
 
         progressBar.set(1);
-        progressBar.animate(0, {duration: 30000}, function() {
+        progressBar.animate(0, {duration: 60000}, function() {
             endGame();
         });
 
         countdown = setInterval(() => {
             timer--;
+            $("#timer-circle").text(timer); // عداد تنازلي داخل الدائرة
             if (timer <= 0) endGame();
         }, 1000);
     }
@@ -175,7 +183,7 @@
 
     function restartGame() {
         correctAnswers = 0;
-        timer = 30;
+        timer = 60; // إعادة ضبط الوقت إلى 60 ثانية
         $("#score").text("الإجابات الصحيحة: 0 / 8");
         $("#map-container").show();
         $("#retry-btn").hide();
