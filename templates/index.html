@@ -6,27 +6,44 @@
     <title>لعبة مدن فلسطين</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+
         body {
             text-align: center;
-            font-family: Arial, sans-serif;
+            font-family: 'Cairo', sans-serif;
+            background: url("{{ url_for('static', filename='pals.png') }}") no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            margin: 0;
+            padding: 0;
         }
+
         #question-box {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
         }
+
         #score, #timer {
             font-size: 18px;
             margin-bottom: 5px;
         }
+
         #map-container {
             position: relative;
             display: inline-block;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
         }
+
         #map {
             width: 486px;
             height: 900px;
+            border-radius: 10px;
         }
+
         .city-point {
             position: absolute;
             width: 14px;
@@ -35,27 +52,35 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: pointer;
+            transition: transform 0.2s ease-in-out;
         }
+
+        .city-point:hover {
+            transform: scale(1.3);
+        }
+
         #feedback {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 28px;
             font-weight: bold;
-            padding: 20px;
+            padding: 15px 30px;
             border-radius: 10px;
             display: none;
-            z-index: 100;
         }
+
         .correct {
             background-color: green;
             color: white;
         }
+
         .wrong {
             background-color: red;
             color: white;
         }
+
         #retry-btn {
             display: none;
             font-size: 18px;
@@ -76,9 +101,9 @@
 
 <div id="map-container">
     <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" width="486" height="900">
-    <div id="feedback"></div>
 </div>
 
+<p id="feedback"></p>
 <button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
 
 <script>
@@ -86,29 +111,21 @@
     let correctAnswers = 0;
     let timer = 30;
     let countdown;
-
-    const cities = {
-        "القدس": {x: 282, y: 368},
-        "الخليل": {x: 249, y: 428},
-        "نابلس": {x: 293, y: 259},
-        "جنين": {x: 299, y: 207},
-        "غزة": {x: 142, y: 424},
-        "يافا": {x: 199, y: 313},
-        "حيفا": {x: 237, y: 139},
-        "عكا": {x: 258, y: 113},
-        "صفد": {x: 339, y: 98},
-        "طبريا": {x: 344, y: 153},
-        "أريحا": {x: 325, y: 349},
-        "بئر السبع": {x: 198, y: 490},
-        "رفح": {x: 106, y: 477},
-        "الناصرة": {x: 297, y: 161}
+    let askedCities = new Set();
+    let cities = {
+        "القدس": {x: 282, y: 368}, "الخليل": {x: 249, y: 428}, "نابلس": {x: 293, y: 259},
+        "جنين": {x: 299, y: 207}, "غزة": {x: 142, y: 424}, "يافا": {x: 199, y: 313},
+        "حيفا": {x: 237, y: 139}, "عكا": {x: 258, y: 113}, "صفد": {x: 339, y: 98},
+        "طبريا": {x: 344, y: 153}, "أريحا": {x: 325, y: 349}, "بئر السبع": {x: 198, y: 490},
+        "رفح": {x: 106, y: 477}, "الناصرة": {x: 297, y: 161}
     };
 
     function loadQuestion() {
-        $.getJSON("/get_question", function(data) {
-            correctCity = data.city;
-            $("#question-box").text(`أين تقع مدينة ${correctCity}؟`);
-        });
+        let availableCities = Object.keys(cities).filter(city => !askedCities.has(city));
+        if (availableCities.length === 0) askedCities.clear();
+        correctCity = availableCities[Math.floor(Math.random() * availableCities.length)];
+        askedCities.add(correctCity);
+        $("#question-box").text(`أين تقع مدينة ${correctCity}؟`);
     }
 
     function startTimer() {
@@ -133,44 +150,55 @@
         $("#timer").text("الوقت المتبقي: 30 ثانية");
         $("#map-container").show();
         $("#retry-btn").hide();
+        askedCities.clear();
         loadQuestion();
         startTimer();
     }
 
-    function createCityPoints() {
-        for (const city in cities) {
-            let point = $("<div class='city-point'></div>");
-            point.css({ 
-                left: cities[city].x + "px", 
-                top: cities[city].y + "px" 
-            });
+    function showFeedback(isCorrect) {
+        let feedback = $("#feedback");
+        feedback.removeClass("correct wrong");
+        if (isCorrect) {
+            feedback.addClass("correct");
+            feedback.text("✔️ إجابة صحيحة!");
+        } else {
+            feedback.addClass("wrong");
+            feedback.text("❌ إجابة خاطئة!");
+        }
+        feedback.fadeIn(300).delay(1000).fadeOut(300);
+    }
 
-            point.data("city", city);
-            point.click(function() {
-                let selectedCity = $(this).data("city");
-                if (selectedCity === correctCity) {
-                    correctAnswers++;
-                    $("#score").text(`الإجابات الصحيحة: ${correctAnswers} / 8`);
-                    showFeedback("✅ إجابة صحيحة!", "correct");
-                } else {
-                    showFeedback("❌ إجابة خاطئة!", "wrong");
-                }
-                setTimeout(() => { loadQuestion(); }, 1000); // تحميل السؤال الجديد بعد ثانية
-            });
-
+    function addCityPoints() {
+        for (let city in cities) {
+            let coords = cities[city];
+            let point = $("<div class='city-point'></div>")
+                .css({top: coords.y + "px", left: coords.x + "px"})
+                .attr("data-city", city);
             $("#map-container").append(point);
         }
     }
 
-    function showFeedback(message, type) {
-        $("#feedback").text(message).removeClass("correct wrong").addClass(type).fadeIn(300);
-        setTimeout(() => { $("#feedback").fadeOut(500); }, 1000);
-    }
-
     $(document).ready(function() {
+        addCityPoints();
         loadQuestion();
         startTimer();
-        createCityPoints();
+
+        $(document).on("click", ".city-point", function() {
+            let selectedCity = $(this).attr("data-city");
+            if (selectedCity === correctCity) {
+                correctAnswers++;
+                $("#score").text("الإجابات الصحيحة: " + correctAnswers + " / 8");
+                showFeedback(true);
+            } else {
+                showFeedback(false);
+            }
+            if (correctAnswers === 8) {
+                $("#question-box").text("مبروك! فزت باللعبة 🎉");
+                endGame();
+            } else {
+                setTimeout(loadQuestion, 1000);
+            }
+        });
     });
 </script>
 
