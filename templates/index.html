@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لعبة مدن فلسطين</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/progressbar.js/1.1.0/progressbar.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
 
@@ -18,13 +19,25 @@
             padding: 0;
         }
 
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #timer-container {
+            width: 100px;
+            height: 100px;
+            position: relative;
+        }
+
         #question-box {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
         }
 
-        #score, #timer {
+        #score {
             font-size: 18px;
             margin-bottom: 5px;
         }
@@ -32,10 +45,7 @@
         #map-container {
             position: relative;
             display: inline-block;
-            background: rgba(255, 255, 255, 0.85);
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 15px;
         }
 
         #map {
@@ -52,11 +62,12 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             cursor: pointer;
-            transition: transform 0.2s ease-in-out;
+            transition: transform 0.2s ease-in-out, background-color 0.3s ease;
         }
 
         .city-point:hover {
-            transform: scale(1.3);
+            transform: scale(1.5);
+            background-color: yellow;
         }
 
         #feedback {
@@ -95,16 +106,21 @@
 <body>
 
 <h1>لعبة مدن فلسطين</h1>
-<div id="question-box">جارٍ تحميل السؤال...</div>
-<div id="score">الإجابات الصحيحة: 0 / 8</div>
-<div id="timer">الوقت المتبقي: 30 ثانية</div>
+<div id="game-container">
+    <div id="question-box">جارٍ تحميل السؤال...</div>
+    <div id="score">الإجابات الصحيحة: 0 / 8</div>
 
-<div id="map-container">
-    <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" width="486" height="900">
+    <div id="timer-container">
+        <svg id="timer-circle" width="100" height="100"></svg>
+    </div>
+
+    <div id="map-container">
+        <img id="map" src="{{ url_for('static', filename='213.png') }}" alt="خريطة فلسطين" width="486" height="900">
+    </div>
+
+    <p id="feedback"></p>
+    <button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
 </div>
-
-<p id="feedback"></p>
-<button id="retry-btn" onclick="restartGame()">إعادة المحاولة</button>
 
 <script>
     let correctCity = "";
@@ -112,6 +128,7 @@
     let timer = 30;
     let countdown;
     let askedCities = new Set();
+    let progressBar;
     let cities = {
         "القدس": {x: 282, y: 368}, "الخليل": {x: 249, y: 428}, "نابلس": {x: 293, y: 259},
         "جنين": {x: 299, y: 207}, "غزة": {x: 142, y: 424}, "يافا": {x: 199, y: 313},
@@ -129,9 +146,22 @@
     }
 
     function startTimer() {
+        progressBar = new ProgressBar.Circle("#timer-circle", {
+            strokeWidth: 10,
+            duration: 30000,
+            color: "#fff",
+            trailColor: "#444",
+            trailWidth: 5,
+            svgStyle: null
+        });
+
+        progressBar.set(1);
+        progressBar.animate(0, {duration: 30000}, function() {
+            endGame();
+        });
+
         countdown = setInterval(() => {
             timer--;
-            $("#timer").text("الوقت المتبقي: " + timer + " ثانية");
             if (timer <= 0) endGame();
         }, 1000);
     }
@@ -147,7 +177,6 @@
         correctAnswers = 0;
         timer = 30;
         $("#score").text("الإجابات الصحيحة: 0 / 8");
-        $("#timer").text("الوقت المتبقي: 30 ثانية");
         $("#map-container").show();
         $("#retry-btn").hide();
         askedCities.clear();
