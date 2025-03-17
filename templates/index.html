@@ -152,10 +152,10 @@
                     correctAnswers++;
                     $("#score").text(`الإجابات الصحيحة: ${correctAnswers} / 8`);
                     showFeedback("✅ إجابة صحيحة!", "correct");
-                    loadQuestion();
                 } else {
                     showFeedback("❌ إجابة خاطئة!", "wrong");
                 }
+                setTimeout(() => { loadQuestion(); }, 1000); // تحميل السؤال الجديد بعد ثانية
             });
 
             $("#map-container").append(point);
