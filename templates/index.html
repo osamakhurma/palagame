@@ -67,20 +67,12 @@
     let timer = 30;
     let countdown;
     let askedCities = new Set();
-    let cities = {
-        "القدس": {x: 282, y: 368}, "الخليل": {x: 249, y: 428}, "نابلس": {x: 293, y: 259},
-        "جنين": {x: 299, y: 207}, "غزة": {x: 142, y: 424}, "يافا": {x: 199, y: 313},
-        "حيفا": {x: 237, y: 139}, "عكا": {x: 258, y: 113}, "صفد": {x: 339, y: 98},
-        "طبريا": {x: 344, y: 153}, "أريحا": {x: 325, y: 349}, "بئر السبع": {x: 198, y: 490},
-        "رفح": {x: 106, y: 477}, "الناصرة": {x: 297, y: 161}
-    };
-
+    
     function loadQuestion() {
-        let availableCities = Object.keys(cities).filter(city => !askedCities.has(city));
-        if (availableCities.length === 0) askedCities.clear();
-        correctCity = availableCities[Math.floor(Math.random() * availableCities.length)];
-        askedCities.add(correctCity);
-        $("#question-box").text(`أين تقع مدينة ${correctCity}؟`);
+        $.getJSON("/get_question", function(data) {
+            correctCity = data.city;
+            $("#question-box").text(`أين تقع مدينة ${correctCity}؟`);
+        });
     }
 
     function startTimer() {
@@ -105,39 +97,13 @@
         $("#timer").text("الوقت المتبقي: 30 ثانية");
         $("#map-container").show();
         $("#retry-btn").hide();
-        askedCities.clear();
         loadQuestion();
         startTimer();
-    }
-
-    function addCityPoints() {
-        for (let city in cities) {
-            let coords = cities[city];
-            let point = $("<div class='city-point'></div>")
-                .css({top: coords.y + "px", left: coords.x + "px"})
-                .attr("data-city", city);
-            $("#map-container").append(point);
-        }
     }
 
     $(document).ready(function() {
-        addCityPoints();
         loadQuestion();
         startTimer();
-
-        $(document).on("click", ".city-point", function() {
-            let selectedCity = $(this).attr("data-city");
-            if (selectedCity === correctCity) {
-                correctAnswers++;
-                $("#score").text("الإجابات الصحيحة: " + correctAnswers + " / 8");
-                if (correctAnswers === 8) {
-                    $("#question-box").text("مبروك! فزت باللعبة 🎉");
-                    endGame();
-                } else {
-                    loadQuestion();
-                }
-            }
-        });
     });
 </script>
 
