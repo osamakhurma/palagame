@@ -71,4 +71,5 @@ def save_player_name(name):
         writer.writerow([name])
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # أخذ البورت من Render أو استخدام 5000 كافتراضي
+    app.run(host="0.0.0.0", port=port, debug=True)
