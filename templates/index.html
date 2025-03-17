@@ -25,10 +25,23 @@
             align-items: center;
         }
 
+        /* صندوق العداد */
         #timer-container {
+            position: relative;
             width: 100px;
             height: 100px;
-            position: relative;
+            margin-bottom: 10px;
+        }
+
+        /* رقم العداد داخل الدائرة */
+        #timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
         }
 
         #question-box {
@@ -42,17 +55,14 @@
             margin-bottom: 5px;
         }
 
-        /* إطار العلم الفلسطيني حول الخريطة */
         #map-container {
             position: relative;
             display: inline-block;
             margin-top: 15px;
-            border: 20px solid;
-            border-top-color: black;
-            border-right-color: white;
-            border-bottom-color: green;
-            border-left-color: red;
-            border-radius: 10px;
+            padding: 10px;
+            border: 10px solid;
+            border-image-source: linear-gradient(to right, black, red, green, white);
+            border-image-slice: 1;
         }
 
         #map {
@@ -117,8 +127,10 @@
     <div id="question-box">جارٍ تحميل السؤال...</div>
     <div id="score">الإجابات الصحيحة: 0 / 8</div>
 
+    <!-- دائرة العداد -->
     <div id="timer-container">
         <svg id="timer-circle" width="100" height="100"></svg>
+        <div id="timer-text">60</div>
     </div>
 
     <div id="map-container">
@@ -132,10 +144,10 @@
 <script>
     let correctCity = "";
     let correctAnswers = 0;
-    let timer = 60; // زيادة الوقت إلى 60 ثانية
+    let timer = 60;
     let countdown;
-    let askedCities = new Set();
     let progressBar;
+    let askedCities = new Set();
     let cities = {
         "القدس": {x: 282, y: 368}, "الخليل": {x: 249, y: 428}, "نابلس": {x: 293, y: 259},
         "جنين": {x: 299, y: 207}, "غزة": {x: 142, y: 424}, "يافا": {x: 199, y: 313},
@@ -155,7 +167,7 @@
     function startTimer() {
         progressBar = new ProgressBar.Circle("#timer-circle", {
             strokeWidth: 10,
-            duration: 60000, // 60 ثانية
+            duration: 60000,
             color: "#fff",
             trailColor: "#444",
             trailWidth: 5,
@@ -163,13 +175,11 @@
         });
 
         progressBar.set(1);
-        progressBar.animate(0, {duration: 60000}, function() {
-            endGame();
-        });
+        progressBar.animate(0, {duration: 60000});
 
         countdown = setInterval(() => {
             timer--;
-            $("#timer-circle").text(timer); // عداد تنازلي داخل الدائرة
+            $("#timer-text").text(timer);
             if (timer <= 0) endGame();
         }, 1000);
     }
@@ -183,10 +193,11 @@
 
     function restartGame() {
         correctAnswers = 0;
-        timer = 60; // إعادة ضبط الوقت إلى 60 ثانية
+        timer = 60;
         $("#score").text("الإجابات الصحيحة: 0 / 8");
         $("#map-container").show();
         $("#retry-btn").hide();
+        $("#timer-text").text("60");
         askedCities.clear();
         loadQuestion();
         startTimer();
@@ -221,20 +232,15 @@
         startTimer();
 
         $(document).on("click", ".city-point", function() {
-            let selectedCity = $(this).attr("data-city");
-            if (selectedCity === correctCity) {
+            if ($(this).attr("data-city") === correctCity) {
                 correctAnswers++;
                 $("#score").text("الإجابات الصحيحة: " + correctAnswers + " / 8");
                 showFeedback(true);
             } else {
                 showFeedback(false);
             }
-            if (correctAnswers === 8) {
-                $("#question-box").text("مبروك! فزت باللعبة 🎉");
-                endGame();
-            } else {
-                setTimeout(loadQuestion, 1000);
-            }
+            if (correctAnswers === 8) endGame();
+            else setTimeout(loadQuestion, 1000);
         });
     });
 </script>
